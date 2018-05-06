@@ -1,0 +1,273 @@
+from django.shortcuts import render, HttpResponseRedirect, redirect
+from django.views import View
+from django.views.generic.edit import FormView
+from django.db.models import F,FloatField,DecimalField,ExpressionWrapper
+from datetime import datetime
+
+
+from .forms import BestPlacesToWorkForm, RentToIncomeRatioForm
+from data.models import JobLocation, Job #, State, Area
+
+import pandas as pd
+#import requests
+from django_pandas.io import read_frame
+#import json
+
+# Create your views here.
+class BestPlacesToWorkView(FormView):
+    material_design = False
+
+    http_method_names = ['get']
+
+    if material_design: template_name = 'best_places_to_work_mdl.html'
+    else: template_name = 'best_places_to_work.html'
+
+    success_url = '/best-places-to-work/'
+
+
+    def get(self, request, *args, **kwargs):
+        form = BestPlacesToWorkForm(request.GET or None)
+        if self.material_design: form.material_design()
+        context = dict()
+        context['form'] = form
+
+        if form.is_valid():
+            context['table'] = self.calculate_best_place_to_work(form)
+
+        return self.render_to_response(context)
+
+
+    def calculate_best_place_to_work(self,form):
+        job = form.cleaned_data['job']
+        location_type = form.cleaned_data['location_type']
+        apartment = form.cleaned_data['apartment']
+
+        for choice in form.fields['location_type'].choices:
+            if choice[0] == location_type: location_name = choice[1]
+
+        #
+        ## Filter Data
+        #
+
+        qs = JobLocation.job_locations.filter(
+            job=job).by_location_type(
+            location_type,include_puerto_rico=True).has_rent(
+            apartment).filter(
+            median__gte=0).filter(
+            jobs_1000__gte=0)
+
+        #
+        ## Convert Queryset into a Dataframe
+        #
+
+        rent_col_name = 'location__rent__' + apartment
+        if apartment != 'total': rent_col_name += '_bedroom'
+
+        field_names = ['jobs_1000','median','location__name',rent_col_name]
+        if location_type == 'state':
+            field_names.append('location__state__initials')
+
+
+        df = read_frame(
+            qs,
+            fieldnames=field_names,
+            verbose=True,
+            coerce_float=True)
+
+        #Calculate Net income
+        # tax = TaxApi()
+        # def apply_net(row):
+        #     gross = row['median']
+        #     state = row['location__state__initials']
+        #     return tax.get_net_income(2016,gross,'single',state)
+        #
+        # if location_type == 'state' and False:
+        #     df['median'] = df.apply(apply_net,axis=1)
+
+
+        #Calculate score
+        df['score'] = 100 * (
+            (.25 * self.normalize(df['median'])) +
+            (.5 * self.normalize(df['jobs_1000'])) +
+            (.25 * (1 - self.normalize(df[rent_col_name]))))
+
+
+        #Sort by Score and add indexes
+        df = df.sort_values(by='score',ascending=False)
+        df.index = pd.Series(range(1,len(df) + 1))
+        df['rank'] = df.index
+
+        #Re-order columns
+        df = df[['rank','location__name','jobs_1000','median',rent_col_name,'score']]
+
+        #Rename columns
+        df = df.rename(
+            columns={
+                'rank'              : 'Rank',
+                'median'            : 'Salary',
+                rent_col_name       : 'Rent',
+                'jobs_1000'         : 'Jobs per 1000',
+                'location__name'    : location_name,
+                'score'             : 'Score'
+            }
+        )
+
+        #tool tooltips
+        tool_tips = {
+            'Rank'          :   "Rank",
+            'Salary'        :   'Median annual salary',
+            'Rent'          :   'Median gross monthly rent',
+            'Jobs per 1000' :   'Workers per 1000 jobs',
+            location_name   :   location_name,
+            'Score'         :   'Score'
+        }
+
+        #align text right for numeric data types and align text left for text
+        table_header = list()
+
+        for col in df.columns:
+            if df[col].dtype in [int,float]:
+                table_header.append([col,'text-right',tool_tips[col]])
+            else:
+                table_header.append([col,'text-left',tool_tips[col]])
+
+
+        #Format output
+        df['Salary']    = df['Salary'].map('${:,.0f}'.format)
+        df['Rent']      = df['Rent'].map('${:,.0f}'.format)
+        df['Score']     = df['Score'].map('{:,.2f}'.format)
+
+        table = {
+            'title'     :   'Best Places to Work',
+            'header'    :   table_header,
+            'data'      :   df
+        }
+
+        return table
+
+
+    def normalize(self,series):
+        return (series - series.min()) / (series.max() - series.min())
+
+
+
+
+
+class RentToIncomeRatioView(FormView):
+    http_method_names = ['get']
+    template_name = 'rent_to_income_ratio.html'
+    success_url = '/rent-to-income-ratio/'
+
+    def get(self, request, *args, **kwargs):
+        form = RentToIncomeRatioForm(request.GET or None)
+        context = dict()
+        context['form'] = form
+
+        if form.is_valid():
+            start = datetime.now()
+            result = self.calculate_rent_to_income_ratio(form)
+            print(datetime.now() - start)
+            context['table_one'] = result['good_jobs']
+            context['table_two'] = result['bad_jobs']
+
+        return self.render_to_response(context)
+
+
+
+    def calculate_rent_to_income_ratio(self,form):
+        location_type = form.cleaned_data['location_type']
+        location = form.cleaned_data['location']
+        apartment = form.cleaned_data['apartment']
+
+        rent_column_name = 'location__rent__' + apartment
+        if apartment != 'total':
+            rent_column_name = 'location__rent__' + apartment + '_bedroom'
+
+
+        qs = JobLocation.job_locations.filter(
+            location=location).filter(
+            median__gte=0).filter(
+            jobs_1000__gte=0).has_rent(
+            apartment).detailed_jobs()#.annotate(ratio=ExpressionWrapper(F(rent_column_name) * 12 / F('median') * 100, output_field=FloatField())).order_by('ratio')
+
+
+        field_names = ['job__title',rent_column_name,'median']
+        #field_names = ['job__title',rent_column_name,'median','ratio']
+        if location_type == 'state':
+            field_names.append('location__state__initials')
+
+
+        df = read_frame(
+            qs,
+            fieldnames = field_names,
+            verbose=False,
+            coerce_float=True)
+
+        #Calculate Net income
+        # tax = TaxApi()
+        # def apply_net(row):
+        #     gross = row['median']
+        #     state = row['location__state__initials']
+        #     return tax.get_net_income(2016,gross,'single',state)
+        #
+        # if location_type == 'state' and False:
+        #     df['median'] = df.apply(apply_net,axis=1)
+
+
+
+        df['ratio'] = (df[rent_column_name] * 12) / df['median'] * 100
+
+        #bad_jobs = df[df['ratio'] > 30]
+        #good_jobs = df[df['ratio'] <= 30]
+        good_jobs = df
+
+        #bad_jobs = bad_jobs.sort_values(by='ratio',ascending=False)
+        good_jobs = good_jobs.sort_values(by='ratio',ascending=True)
+
+
+
+        def format_df(df,title):
+            df.index = pd.Series(range(1,len(df) + 1))
+            df['rank'] = df.index
+
+            df = df[['rank','job__title',rent_column_name,'median','ratio']]
+
+            new_column_names = {
+                'rank'              :   'Rank',
+                'job__title'        :   'Job',
+                rent_column_name    :   'Rent',
+                'median'            :   'Salary',
+                'ratio'             :   'Ratio'
+            }
+
+            df = df.rename(columns=new_column_names)
+
+            #align text right for numeric data types and align text left for text
+            table_header = list()
+
+            tool_tips = {
+                'Rank'      :   'Rank',
+                'Job'       :   'Job title',
+                'Rent'      :   'Median gross monthly rent',
+                'Salary'    :   'Median annual salary',
+                'Ratio'     :   'Rent to income ratio'
+            }
+
+            for col in df.columns:
+                if df[col].dtype in [int,float]:
+                    table_header.append([col,'text-right',tool_tips[col]])
+                else:
+                    table_header.append([col,'text-left',tool_tips[col]])
+
+            df['Ratio']      = df['Ratio'].map('{:,.2f}'.format)
+            df['Rent']      = df['Rent'].map('${:,.2f}'.format)
+            df['Salary']    = df['Salary'].map('${:,.2f}'.format)
+
+            return {'title':title,'header':table_header,'data':df}
+
+
+
+        bad_jobs = None#format_df(bad_jobs,"Jobs that can't afford rent")
+        good_jobs = format_df(good_jobs,"Jobs that can afford rent")
+
+        return {'good_jobs':good_jobs,'bad_jobs':bad_jobs}

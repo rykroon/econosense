@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class='row m-5'>
+  <div class='col-12'>
+    <h1 class='display-4 text-center'>Best Places To Work</h1>
+  </div>
+</div>
+
+
+<div class='row my-3 '>
+  <div class='col-12 offset-md-1 col-md-5'>
+    <form method='GET' class='needs-validation' novalidate>
+
+      <!-- Major Job  -->
+      <div class='form-group '>
+        <label for='{{ form.job_category.id_for_label }}'> {{ form.job_category.label }} (optional) </label>
+        {{ form.job_category }}
+      </div>
+
+      <!-- Job  -->
+      <div class='form-group'>
+        <label for='{{ form.job.id_for_label }}'> {{ form.job.label }} </label>
+        {{ form.job }}
+        <div class="invalid-feedback">
+          Job is missing
+        </div>
+      </div>
+
+      <!-- Location Type -->
+      <div class='form-group'>
+        <label for='{{ form.location_type.id_for_label }}'> {{ form.location_type.label }} </label>
+        <div>
+
+          {% for radio in form.location_type %}
+          <div class='custom-control custom-radio custom-control-inline'>
+            {{ radio.tag }}
+            <label class='custom-control-label' for='{{ radio.id_for_label }}'>{{ radio.choice_label }}</label>
+          </div>
+          {% endfor %}
+
+        </div>
+      </div> <!-- /location type -->
+
+      <!-- Apartment  -->
+      <div class='form-group'>
+        <label for='{{ form.apartment.id_for_label }}'> {{ form.apartment.label }} </label>
+        {{ form.apartment }}
+      </div>
+
+      <!-- Submit Button -->
+      <button type='submit' class='btn btn-primary'>Search</button>
+    </form>
+  </div>
+
+  <div class='col-md-5 border-left d-none d-md-block'>
+
+
+  </div>
+
+</div> <!-- row -->
+
+<hr class='my-3'>
+
+<!-- Result Table -->
+<div class='row my-3'>
+  <div class='col-12 offset-md-1 col-md-10'>
+    <div class='table-responsive' >
+      <table id='bptw_table' class='table table-hover border-left border-right'>
+        <caption style="caption-side: top;"></caption>
+
+        <thead class='thead-light'>
+          <tr>
+            {% for col_name,class,tool_tip in table.header %}
+            <th id='{{col_name}}' class='{{class}}' data-toggle="tooltip" data-placement="top" title="{{tool_tip}}">{{ col_name }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+
+        <tbody>
+          <!-- { for index,row in table.data.iterrows } -->
+          {% for index,field1,field2,field3,field4,field5,field6 in table.data.itertuples %}
+          <tr>
+            <!-- { for col in row } -->
+
+            <td class="text-right">{{ field1 }}</td>
+            <td class="text-left">{{ field2 }}</td>
+            <td class="text-right">{{ field3 }}</td>
+            <td class="text-right">{{ field4 }}</td>
+            <td class="text-right">{{ field5 }}</td>
+            <td class="text-right">{{ field6 }}</td>
+            <!-- { endfor } -->
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+{% endblock content %}
+
+{% block js %}
+{% load static %}
+<script>
+// Example starter JavaScript for disabling form submissions if there are invalid fields
+(function() {
+  'use strict';
+  window.addEventListener('load', function() {
+    // Fetch all the forms we want to apply custom Bootstrap validation styles to
+    var forms = document.getElementsByClassName('needs-validation');
+    // Loop over them and prevent submission
+    var validation = Array.prototype.filter.call(forms, function(form) {
+      form.addEventListener('submit', function(event) {
+        if (form.checkValidity() === false) {
+          event.preventDefault();
+          event.stopPropagation();
+
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+  }, false);
+})();
+</script>
+
+<script src="{% static "best_places_to_work.js" %}"></script>
+{% endblock js %}

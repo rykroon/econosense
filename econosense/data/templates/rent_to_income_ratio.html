@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class='row m-5'>
+  <div class='col-12'>
+    <h1 class='display-4 text-center'>Rent To Income Ratio</h1>
+  </div>
+</div>
+
+
+<!-- Form -->
+<div class='row my-3'>
+  <div class='col-12 offset-md-1 col-md-5'>
+    <form method='GET' class='needs-validation' novalidate>
+
+      <!-- Location type -->
+      <div class='form-group'>
+        <label for='{{ form.location_type.id_for_label }}'> {{ form.location_type.label }} </label>
+
+        <div id='radios'>
+          {% for radio in form.location_type %}
+          <div class='custom-control custom-radio custom-control-inline'>
+            {{ radio.tag }}
+            <label class='custom-control-label' for='{{ radio.id_for_label }}'>{{ radio.choice_label }}</label>
+          </div>
+          {% endfor %}
+        </div>
+
+      </div> <!-- /location type -->
+
+      <!-- Location -->
+      <div class='form-group '>
+        <label for='{{ form.location.id_for_label }}'> {{ form.location.label }} </label>
+        {{ form.location }}
+        <div class='invalid-feedback'>
+          Location is missing
+        </div>
+      </div>
+
+      <!-- Apartment -->
+      <div class='form-group'>
+        <label for='{{ form.apartment.id_for_label }}'> {{ form.apartment.label }} </label>
+        {{ form.apartment }}
+      </div>
+
+      <!-- Submit Button -->
+      <button type='submit' class='btn btn-primary'>Search</button>
+
+    </form>
+  </div> <!-- end column-->
+
+  <div class='col-md-5 border-left d-none d-md-block'>
+  </div> <!-- end column-->
+
+</div> <!-- end row -->
+
+<hr>
+
+<!-- good jobs -->
+<div class='row my-3'>
+  <div class='col-12'>
+
+    <div class='table-responsive'>
+
+      <table id='tbl_one' class='table table-hover border-left border-right'>
+        <!-- <caption style="caption-side: top;">{{table_one.title}}</caption> -->
+        <thead class='thead-light'>
+          <tr>
+            {% for col_name,class,tool_tip in table_one.header %}
+            <th class='{{class}}' data-toggle="tooltip" data-placement="top" title="{{tool_tip}}">{{ col_name }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+
+        <tbody>
+          <!-- { for index,row in table_one.data.iterrows } -->
+          {% for index,field1,field2,field3,field4,field5 in table_one.data.itertuples %}
+          <tr>
+            <!-- <td class="text-right">{{ row.0 }}</td>
+            <td class="text-left">{{ row.1 }}</td>
+            <td class="text-right">{{ row.2 }}</td>
+            <td class="text-right">{{ row.3 }}</td>
+            <td class="text-right">{{ row.4 }}</td> -->
+
+            <td class="text-right">{{ field1 }}</td>
+            <td class="text-left">{{ field2 }}</td>
+            <td class="text-right">{{ field3 }}</td>
+            <td class="text-right">{{ field4 }}</td>
+            <td class="text-right">{{ field5 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div> <!-- /good jobs -->
+
+
+<!-- Shit Jobs -->
+<!-- <div class='row my-3'>
+  <div class='col-12'>
+    <div class='table-responsive'>
+      <table id='tbl_two' class='table table-hover border-left border-right'>
+        <caption style="caption-side: top;">{{table_two.title}}</caption>
+        <thead class='thead-light'>
+          <tr>
+            {% for col_name,class,tool_tip in table_two.header %}
+            <th class='{{class}}' data-toggle="tooltip" data-placement="top" title="{{tool_tip}}">{{ col_name }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for index,row in table_two.data.iterrows %}
+          <tr class='bg-danger-light'>
+            <td class="text-right">{{ row.0 }}</td>
+            <td class="text-left">{{ row.1 }}</td>
+            <td class="text-right">{{ row.2 }}</td>
+            <td class="text-right">{{ row.3 }}</td>
+            <td class="text-right">{{ row.4 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+
+      </table>
+    </div>
+  </div>
+</div> -->
+
+{% endblock content %}
+
+{% block js %}
+{% load static %}
+<script>
+// Example starter JavaScript for disabling form submissions if there are invalid fields
+(function() {
+  'use strict';
+  window.addEventListener('load', function() {
+    // Fetch all the forms we want to apply custom Bootstrap validation styles to
+    var forms = document.getElementsByClassName('needs-validation');
+    // Loop over them and prevent submission
+    var validation = Array.prototype.filter.call(forms, function(form) {
+      form.addEventListener('submit', function(event) {
+        if (form.checkValidity() === false) {
+          event.preventDefault();
+          event.stopPropagation();
+
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+  }, false);
+})();
+</script>
+
+<script src="{% static "rent_to_income_ratio.js" %}">  </script>
+
+{% endblock js %}

@@ -15,7 +15,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from data.views import BestPlacesToWorkView,RentToIncomeRatioView
+from main.views import home
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('', home),
+    path('best-places-to-work/',BestPlacesToWorkView.as_view()),
+    path('rent-to-income-ratio/',RentToIncomeRatioView.as_view()),
 ]

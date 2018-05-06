@@ -9,6 +9,7 @@ django-heroku = "*"
 gunicorn = "*"
 django-pandas = "*"
 simpledbf = "*"
+"psycopg2-binary" = "*"
 
 [dev-packages]
 
