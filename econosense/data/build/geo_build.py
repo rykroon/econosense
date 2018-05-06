@@ -207,13 +207,17 @@ def main(year,raw_data_path):
     directories = ['STATE','CSA','CNECTA','CBSA','NECTA','METDIV','NECTADIV']
 
     data_frames = {}
+    print('getting geo data')
     for directory in directories:
         data_frames[directory] = get_data(directory, year, raw_data_path)
 
+    print('creating Regions and Divisions')
     create_regions_and_divisons()
 
     #for key,value in data_frames.items():
     for key in directories:
+        print('Creating data from geo directory ' + key)
+        
         value = data_frames[key]
         for row in value.itertuples():
             if key == 'STATE':

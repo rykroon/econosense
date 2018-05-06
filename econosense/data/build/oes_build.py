@@ -134,21 +134,24 @@ def main(year,raw_data_path):
 
     data = {}
 
+    print('Getting OES data')
     for table in tables:
         data[table] = get_data(table, year, raw_data_path)
 
     parents = {}
+    print('Building jobs')
     for row in data['National']['national'].itertuples():
         if row.OCC_CODE != '00-0000':
             parents[row.OCC_GROUP] = row.OCC_CODE
             create_job(row,parents)
 
-
+    print('Building job locations by state')
     for row in data['State']['state'].itertuples():
         if row.OCC_CODE != '00-0000':
             # create_job_location(row,'state')
             create_job_location(row)
 
+    print('Building job locations by Metropolitan')
     df =  data['Metropolitan']['MSA']
     df.apply(create_job_location_fast,axis=1)
 

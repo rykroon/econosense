@@ -28,12 +28,17 @@ except:
 
 
 for source in data_sources:
-    print(source)
+
+    try:
+        os.mkdir(raw_data_path)
+        print('Created directory ' + raw_data_path)
+    except: pass
+
     path = os.path.join(raw_data_path,source)
 
     if source in ['geo','oes'] and not os.path.isdir(path):
         os.mkdir(path)
 
-    if source == 'geo': geo_update.main(year,path)
-    if source == 'oes': oes_update.main(year,path)
-    if source == 'acs': acs_update.main(year)
+    if source == 'geo': geo_build.main(year,path)
+    if source == 'oes': oes_build.main(year,path)
+    if source == 'acs': acs_build.main(year)
