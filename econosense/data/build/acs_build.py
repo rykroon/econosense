@@ -6,10 +6,10 @@ import sys
 #Set up Django Environment
 import django
 sys.path.append(os.getcwd())
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "jobproject.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "econosense.settings")
 django.setup()
 
-from appdata.models import Rent,Area,State,Location
+from data.models import Rent,Area,State,Location
 
 
 def build_url(year,group,geo,variable):

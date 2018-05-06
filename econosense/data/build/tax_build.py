@@ -5,11 +5,11 @@ import decimal
 #Set up Django Environment
 import django
 sys.path.append(os.getcwd())
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "jobproject.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "econosense.settings")
 django.setup()
 
-from appdata.models import JobLocation,Income,State
-from appdata.taxee_api import TaxeeApi
+from data.models import JobLocation,Income,State
+from data.taxee_api import TaxeeApi
 
 
 

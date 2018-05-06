@@ -10,6 +10,7 @@ gunicorn = "*"
 django-pandas = "*"
 simpledbf = "*"
 "psycopg2-binary" = "*"
+requests = "*"
 
 [dev-packages]
 

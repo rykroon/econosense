@@ -8,10 +8,10 @@ import pandas as pd
 #Set up Django Environment
 import django
 sys.path.append(os.getcwd())
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "jobproject.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "econosense.settings")
 django.setup()
 
-from appdata.models import Location,Region,Division,State,CombinedArea,Area
+from data.models import Location,Region,Division,State,CombinedArea,Area
 
 
 def get_data(directory,year,raw_data_path):

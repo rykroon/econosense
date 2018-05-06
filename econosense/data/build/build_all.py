@@ -1,10 +1,10 @@
 import sys
 import os
-import acs_update
-import oes_update
-import geo_update
+import acs_build
+import oes_build
+import geo_build
 
-raw_data_path = 'appdata/update/rawdata'
+raw_data_path = 'data/build/rawdata'
 
 try:
     year = sys.argv[1]
@@ -28,6 +28,7 @@ except:
 
 
 for source in data_sources:
+    print(source)
     path = os.path.join(raw_data_path,source)
 
     if source in ['geo','oes'] and not os.path.isdir(path):
