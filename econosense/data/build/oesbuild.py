@@ -1,6 +1,7 @@
 import os
 import sys
 import urllib.request
+import requests
 import zipfile
 import pandas as pd
 
@@ -11,6 +12,14 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "econosense.settings")
 django.setup()
 
 from data.models import Job,JobLocation,Area,State,Location
+
+
+#Heroku only allows up to 10,000 rows of data for the free database tier
+#limit how much data gets added if in Staging Environment
+try:
+    PARTIAL_DATABASE = os.environ['PARTIAL_DATABASE']
+except:
+    PARTIAL_DATABASE = False
 
 
 def get_data(table,year,raw_data_path):
@@ -37,6 +46,8 @@ def get_data(table,year,raw_data_path):
         zip_file_path = os.path.join(working_directory,file_name)
 
         #Download
+        # !! change to use the requests library since that is the recommended
+        # python module for http requests !!
         urllib.request.urlretrieve(download_url,zip_file_path)
 
         #Extract Zip File
@@ -49,21 +60,23 @@ def get_data(table,year,raw_data_path):
 
     working_directory = os.path.join(working_directory,file_name)
 
-    files = os.listdir(working_directory)
+    files_in_working_directory = os.listdir(working_directory)
 
     data_frames = {}
 
-    for file in files:
+    for file in files_in_working_directory:
         file_path = os.path.join(working_directory,file)
 
-        if file_path[-8:] == '_dl.xlsx':
+        #if file_path[-8:] == '_dl.xlsx':
+        if file_path.endswith('_dl.xlsx')
             frame_name = file[:file.index('_')]
             df = pd.read_excel(file_path)
             data_frames[frame_name] = df
             df.to_csv(os.path.join(working_directory,frame_name + '.csv'),index=False)
             os.remove(file_path)
 
-        elif file_path[-4:] == '.csv':
+        #elif file_path[-4:] == '.csv':
+        elif file_path.endswith('.csv'):
             frame_name = file[:file.index('.')]
             df = pd.read_csv(file_path)
             data_frames[frame_name] = df
@@ -74,6 +87,11 @@ def get_data(table,year,raw_data_path):
 def create_job(data,parents):
     job = Job()
     job.id = occ_code_to_int(data.OCC_CODE)
+
+
+    if skip_job(job): return
+
+
     job.title = data.OCC_TITLE
     job.group = data.OCC_GROUP
 
@@ -91,13 +109,36 @@ def occ_code_to_int(occ_code):
     return int(occ_code[:2] + occ_code[3:])
 
 
+#Created this because of 10,000 row limit in Heroku Postgres Free Tier
+def skip_job(job):
+    if PARTIAL_DATABASE:
+        str_id = str(job.id)
+
+        #do not add jobs where the third digit from the left is greater than one
+        if int(str_id[2]) > 1 or job.id >= 300000:
+            return True
+
+    return False
+
+
+
 #def create_job_location(data,location_type):
 def create_job_location(data):
     job_loc = JobLocation()
-    job_loc.job = Job.objects.get(id=occ_code_to_int(data.OCC_CODE))
-    #if location_type == 'state': job_loc.state = State.objects.get(id=data.AREA)
-    #if location_type == 'area': job_loc.area = Area.objects.get(id=data.AREA)
-    job_loc.location = Location.objects.get(id=data.AREA)
+
+    #If only building a partial database then sometimes the job_id might not exist
+    try:
+        job_loc.job = Job.objects.get(id=occ_code_to_int(data.OCC_CODE))
+    except:
+        if PARTIAL_DATABASE:
+            return
+
+    #If only building a partial database then sometimes the location_id might not exist
+    try:
+        job_loc.location = Location.objects.get(id=data.AREA)
+    except:
+        if PARTIAL_DATABASE:
+            return
 
     job_loc.employed = clean_data(data.TOT_EMP)
     job_loc.jobs_1000 = clean_data(data.JOBS_1000)
@@ -129,6 +170,9 @@ def clean_data(data):
 
 
 def main(year,raw_data_path):
+    Job.objects.all().delete()
+    JobLocation.objects.all().delete()
+
     tables = ['National','State','Metropolitan']
     #raw_data_path = 'oes/rawData'
 

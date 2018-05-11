@@ -1,6 +1,7 @@
 import os
 import sys
 import urllib.request
+import requests
 import zipfile
 from simpledbf import Dbf5
 import pandas as pd
@@ -12,6 +13,14 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "econosense.settings")
 django.setup()
 
 from data.models import Location,Region,Division,State,CombinedArea,Area
+
+
+#Heroku only allows up to 10,000 rows of data for the free database tier
+#limit how much data gets added if in Staging Environment
+try:
+    PARTIAL_DATABASE = os.environ['PARTIAL_DATABASE']
+except:
+    PARTIAL_DATABASE = False
 
 
 def get_data(directory,year,raw_data_path):
@@ -37,6 +46,7 @@ def get_data(directory,year,raw_data_path):
     zip_file_path = os.path.join(working_directory,file_name)
 
     #Download
+    # !! use requests library instead !!
     urllib.request.urlretrieve(download_url,zip_file_path)
 
     #Extract Zip File
@@ -45,13 +55,14 @@ def get_data(directory,year,raw_data_path):
     zip_ref.close()
 
     #Clean up
-    files = os.listdir(working_directory)
+    files_in_working_directory = os.listdir(working_directory)
 
-    for file in files:
+    for file in files_in_working_directory:
         file_path = os.path.join(working_directory,file)
-        extension = file_path[-3:]
+        #extension = file_path[-3:]
 
-        if extension == 'dbf':
+        #if extension == 'dbf':
+        if file_path.endswith('.dbf'):
             dbf = Dbf5(file_path)
             df = dbf.to_dataframe()
             df.to_csv(file_path[:-4] + '.csv',index=False)
@@ -73,7 +84,20 @@ def create_state(data):
     state.initials = data.STUSPS
     state.region = Region.objects.get(id=int(data.REGION))
     state.division = Division.objects.get(id=int(data.DIVISION))
+
+    if skip_state(state): return
+
     state.save()
+
+
+#Created this because of 10,000 row limit in Heroku Postgres Free Tier
+def skip_state(state):
+    if PARTIAL_DATABASE:
+        if state.region.id in [2,4]:
+            return True
+
+    return False
+
 
 def create_combined_area(data):
     csa = CombinedArea()
@@ -95,6 +119,8 @@ def create_area(data):
         try: area.id = data.NCTADVFP
         except: area.id = data.GEOID
 
+    if skip_area(area): return
+
     area.name = data.NAME
     area.lsad_name = data.NAMELSAD
     area.lsad = data.LSAD
@@ -111,8 +137,11 @@ def create_area(data):
         try: parent_id = int(data.NECTAFP)
         except: parent_id = None
 
+
     if parent_id is not None and parent_id != area.id:
-        area.parent = Area.objects.get(id=parent_id)
+        #if building a partial database then the parent may not exist
+        try: area.parent = Area.objects.get(id=parent_id)
+        except: return
 
 
     #Get Combined Area if it exists
@@ -124,35 +153,20 @@ def create_area(data):
     if combined_area_id is not None:
         area.combined_area = CombinedArea.objects.get(id=combined_area_id)
 
-
     area.save()
 
-# def create_area_div(data):
-#     area = Area()
-#
-#     area.id = data.METDIVFP
-#     area.name = data.NAME
-#     area.lsad = data.LSAD
-#     area.latitude = data.INTPTLAT
-#     area.longitude = data.INTPTLON
-#
-#     area.long_name = data.NAMELSAD
-#     area.parent = Area.objects.get(id=int(data.CBSAFP))
-#     area.save()
 
-# def create_necta_div(data):
-#     area = Area()
-#
-#     area.id = data.NCTADVFP
-#     area.name = data.NAME
-#     area.lsad = data.LSAD
-#     area.latitude = data.INTPTLAT
-#     area.longitude = data.INTPTLON
-#
-#     area.long_name = data.NAMELSAD
-#
-#     area.parent = Area.objects.get(id=int(data.NECTAFP))
-#     area.save()
+#Created this because of 10,000 row limit in Heroku Postgres Free Tier
+def skip_area(area):
+    if PARTIAL_DATABASE:
+        str_id = str(area.id)
+
+        #do not add areas where the second digit from the left is greater than zero
+        if int(str_id[1]) > 0:
+            return True
+
+    return False
+
 
 def create_regions_and_divisons():
     north_east = Region(id=1,name='Northeast')
@@ -207,17 +221,17 @@ def main(year,raw_data_path):
     directories = ['STATE','CSA','CNECTA','CBSA','NECTA','METDIV','NECTADIV']
 
     data_frames = {}
-    print('getting geo data')
+    print('Getting geo data')
     for directory in directories:
         data_frames[directory] = get_data(directory, year, raw_data_path)
 
-    print('creating Regions and Divisions')
+    print('Building Regions and Divisions')
     create_regions_and_divisons()
 
     #for key,value in data_frames.items():
     for key in directories:
-        print('Creating data from geo directory ' + key)
-        
+        print('Building data from geo directory ' + key)
+
         value = data_frames[key]
         for row in value.itertuples():
             if key == 'STATE':

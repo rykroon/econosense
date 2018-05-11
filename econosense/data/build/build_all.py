@@ -1,8 +1,8 @@
 import sys
 import os
-import acs_build
-import oes_build
-import geo_build
+import acsbuild
+import oesbuild
+import geobuild
 
 raw_data_path = 'data/build/rawdata'
 
@@ -39,6 +39,6 @@ for source in data_sources:
     if source in ['geo','oes'] and not os.path.isdir(path):
         os.mkdir(path)
 
-    if source == 'geo': geo_build.main(year,path)
-    if source == 'oes': oes_build.main(year,path)
-    if source == 'acs': acs_build.main(year)
+    if source == 'geo': geobuild.main(year,path)
+    if source == 'oes': oesbuild.main(year,path)
+    if source == 'acs': acsbuild.main(year)

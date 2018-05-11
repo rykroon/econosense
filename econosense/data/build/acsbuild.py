@@ -40,6 +40,7 @@ def main(year):
     for kgeo,vgeo in geographies.items(): #each geography
         rents = {}
 
+        print('Building rent data by ' + kgeo)
         for kvar,vvar in variables.items(): #each bedroom
             url = build_url(year,median_gross_rent,vgeo,vvar)
             response = requests.get(url)
@@ -66,9 +67,10 @@ def main(year):
                         rent = rents[loc_id]
                     except: #create new Rent object
                         rent = Rent()
-                        # if kgeo == 'State': rent.state = State.objects.get(id=loc_id)
-                        # else: rent.area = Area.objects.get(id=loc_id)
-                        rent.location = Location.objects.get(id=loc_id)
+
+                        #If building a partial database then we might not find the location
+                        try: rent.location = Location.objects.get(id=loc_id)
+                        except: continue
 
 
                     if kvar == 'Total': rent.total = amount
