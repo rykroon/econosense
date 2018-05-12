@@ -1,10 +1,10 @@
 import os
 import sys
-import urllib.request
 import requests
 import zipfile
 from simpledbf import Dbf5
 import pandas as pd
+from data.build.partialdb import PartialDatabase
 
 #Set up Django Environment
 import django
@@ -14,13 +14,7 @@ django.setup()
 
 from data.models import Location,Region,Division,State,CombinedArea,Area
 
-
-#Heroku only allows up to 10,000 rows of data for the free database tier
-#limit how much data gets added if in Staging Environment
-try:
-    PARTIAL_DATABASE = os.environ['PARTIAL_DATABASE']
-except:
-    PARTIAL_DATABASE = False
+partialdb = PartialDatabase()
 
 
 def get_data(directory,year,raw_data_path):
@@ -47,7 +41,10 @@ def get_data(directory,year,raw_data_path):
 
     #Download
     # !! use requests library instead !!
-    urllib.request.urlretrieve(download_url,zip_file_path)
+    #urllib.request.urlretrieve(download_url,zip_file_path)
+    response = requests.get(download_url)
+    with open(zip_file_path,'wb') as f:
+        f.write(response.content)
 
     #Extract Zip File
     zip_ref = zipfile.ZipFile(zip_file_path, 'r')
@@ -85,18 +82,18 @@ def create_state(data):
     state.region = Region.objects.get(id=int(data.REGION))
     state.division = Division.objects.get(id=int(data.DIVISION))
 
-    if skip_state(state): return
+    if partialdb.skip_state(state): return
 
     state.save()
 
 
 #Created this because of 10,000 row limit in Heroku Postgres Free Tier
-def skip_state(state):
-    if PARTIAL_DATABASE:
-        if state.region.id in [2,4]:
-            return True
-
-    return False
+# def skip_state(state):
+#     if PARTIAL_DATABASE:
+#         if state.region.id in [2,4]:
+#             return True
+#
+#     return False
 
 
 def create_combined_area(data):
@@ -111,6 +108,7 @@ def create_combined_area(data):
 
     csa.save()
 
+
 def create_area(data):
     area = Area()
 
@@ -119,7 +117,7 @@ def create_area(data):
         try: area.id = data.NCTADVFP
         except: area.id = data.GEOID
 
-    if skip_area(area): return
+    if partialdb.skip_area(area): return
 
     area.name = data.NAME
     area.lsad_name = data.NAMELSAD
@@ -157,15 +155,15 @@ def create_area(data):
 
 
 #Created this because of 10,000 row limit in Heroku Postgres Free Tier
-def skip_area(area):
-    if PARTIAL_DATABASE:
-        str_id = str(area.id)
-
-        #do not add areas where the second digit from the left is greater than zero
-        if int(str_id[1]) > 0:
-            return True
-
-    return False
+# def skip_area(area):
+#     if PARTIAL_DATABASE:
+#         str_id = str(area.id)
+#
+#         #do not add areas where the second digit from the left is greater than zero
+#         if int(str_id[1]) > 0:
+#             return True
+#
+#     return False
 
 
 def create_regions_and_divisons():
