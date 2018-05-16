@@ -9,12 +9,12 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "econosense.settings")
 django.setup()
 
 from data.models import JobLocation,Income,State
-from data.taxee_api import TaxeeApi
+from data.taxee import Taxee
 
 
 
 def main(year):
-    tax = TaxeeApi()
+    tax = Taxee()
     qs = JobLocation.job_locations.by_state().filter(median__gte=0)
 
     for job_loc in qs:

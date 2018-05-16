@@ -1,7 +1,8 @@
-import json
+#import json
 import requests
-import os.path
+#import os.path
 import sys
+import os
 
 #Set up Django Environment
 import django
@@ -12,19 +13,30 @@ django.setup()
 from data.models import Rent,Area,State,Location
 
 
-def build_url(year,group,geo,variable):
-    base_url = 'https://api.census.gov/data/' + year + '/acs/acs1'
-    #might be an easier way to this with a 'params' variable as part of the request
-    #'get' and 'for' would be the parms
-    get = '?get=' + group + '_' + variable
-    for_ = 'for=' + geo + ':*' # * - all
-    get_for = get + '&' + for_
-    return os.path.join(base_url,get_for)
+
+# def build_url(year,group,geo,variable):
+#     base_url = 'https://api.census.gov/data/' + year + '/acs/acs1'
+#     #might be an easier way to this with a 'params' variable as part of the request
+#     #'get' and 'for' would be the parms
+#     get = '?get=' + group + '_' + variable
+#     for_ = 'for=' + geo + ':*' # * - all
+#     get_for = get + '&' + for_
+#     return os.path.join(base_url,get_for)
 
 
 def main(year):
     Rent.objects.all().delete()
     base_url = 'https://api.census.gov/data/' + year + '/acs/acs1'
+
+    try:
+        print(os.environ)
+        CENSUS_API_KEY = os.environ['CENSUS_API_KEY']
+    except:
+        print('API key not found')
+        return
+
+    params = dict()
+    params['key'] = CENSUS_API_KEY
 
     median_gross_rent = 'B25031' #group
 
@@ -54,7 +66,6 @@ def main(year):
 
         print('Building rent data by ' + geo_key)
         for var_key,var_value in variables.items(): #each bedroom
-            params = dict()
             params['get'] = median_gross_rent + '_' + var_value
             params['for'] = geo_value + ':*'
             #url = build_url(year,median_gross_rent,geo_value,var_value)
