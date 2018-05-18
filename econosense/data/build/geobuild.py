@@ -32,6 +32,7 @@ def get_data(directory,year,raw_data_path):
     file_name = 'tl_' + year + '_us_' + directory.lower() + '.csv'
 
     if os.path.exists(os.path.join(working_directory,file_name)):
+        print('Loading data from ' + os.path.join(working_directory,file_name))
         return pd.read_csv(os.path.join(working_directory,file_name))
 
     file_name = file_name[:-4] + '.zip'
@@ -40,8 +41,7 @@ def get_data(directory,year,raw_data_path):
     zip_file_path = os.path.join(working_directory,file_name)
 
     #Download
-    # !! use requests library instead !!
-    #urllib.request.urlretrieve(download_url,zip_file_path)
+    print('Downloading data from ' + download_url)
     response = requests.get(download_url)
     with open(zip_file_path,'wb') as f:
         f.write(response.content)
@@ -87,15 +87,6 @@ def create_state(data):
     state.save()
 
 
-#Created this because of 10,000 row limit in Heroku Postgres Free Tier
-# def skip_state(state):
-#     if PARTIAL_DATABASE:
-#         if state.region.id in [2,4]:
-#             return True
-#
-#     return False
-
-
 def create_combined_area(data):
     csa = CombinedArea()
 
@@ -138,7 +129,7 @@ def create_area(data):
 
     if parent_id is not None and parent_id != area.id:
         #if building a partial database then the parent may not exist
-        try: area.parent = Area.objects.get(id=parent_id)
+        try:    area.parent = Area.objects.get(id=parent_id)
         except: return
 
 
@@ -152,18 +143,6 @@ def create_area(data):
         area.combined_area = CombinedArea.objects.get(id=combined_area_id)
 
     area.save()
-
-
-#Created this because of 10,000 row limit in Heroku Postgres Free Tier
-# def skip_area(area):
-#     if PARTIAL_DATABASE:
-#         str_id = str(area.id)
-#
-#         #do not add areas where the second digit from the left is greater than zero
-#         if int(str_id[1]) > 0:
-#             return True
-#
-#     return False
 
 
 def create_regions_and_divisons():

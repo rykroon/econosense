@@ -35,18 +35,14 @@ def get_data(table,year,raw_data_path):
     #Download and Unzip file if doesnt already exist
     if not os.path.isdir(os.path.join(working_directory,file_name)):
 
-
         file_name += '.zip'
 
         download_url = os.path.join(base_url,file_name)
         zip_file_path = os.path.join(working_directory,file_name)
 
-        print('Downloading files from ' + download_url)
+        print('Downloading data from ' + download_url)
 
         #Download
-        # !! change to use the requests library since that is the recommended
-        # python module for http requests !!
-        #urllib.request.urlretrieve(download_url,zip_file_path)
         response = requests.get(download_url)
         with open(zip_file_path,'wb') as f:
             f.write(response.content)

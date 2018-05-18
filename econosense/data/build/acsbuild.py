@@ -1,8 +1,6 @@
-#import json
-import requests
-#import os.path
 import sys
 import os
+import requests
 
 #Set up Django Environment
 import django
@@ -13,23 +11,11 @@ django.setup()
 from data.models import Rent,Area,State,Location
 
 
-
-# def build_url(year,group,geo,variable):
-#     base_url = 'https://api.census.gov/data/' + year + '/acs/acs1'
-#     #might be an easier way to this with a 'params' variable as part of the request
-#     #'get' and 'for' would be the parms
-#     get = '?get=' + group + '_' + variable
-#     for_ = 'for=' + geo + ':*' # * - all
-#     get_for = get + '&' + for_
-#     return os.path.join(base_url,get_for)
-
-
 def main(year):
     Rent.objects.all().delete()
     base_url = 'https://api.census.gov/data/' + year + '/acs/acs1'
 
     try:
-        print(os.environ)
         CENSUS_API_KEY = os.environ['CENSUS_API_KEY']
     except:
         print('API key not found')
@@ -68,12 +54,9 @@ def main(year):
         for var_key,var_value in variables.items(): #each bedroom
             params['get'] = median_gross_rent + '_' + var_value
             params['for'] = geo_value + ':*'
-            #url = build_url(year,median_gross_rent,geo_value,var_value)
             response = requests.get(base_url,params=params)
 
             if response.status_code == 200:
-                print('success with ' + response.url)
-                #result = json.loads(response.content.decode('UTF8'))
                 result = response.json()
 
                 for row in result[1:]:
