@@ -72,6 +72,7 @@ def get_data(table,year,raw_data_path):
             os.remove(file_path)
 
         elif file_path.endswith('.csv'):
+            print('Loading data from ' + working_directory)
             frame_name = file[:file.index('.')]
             df = pd.read_csv(file_path)
             data_frames[frame_name] = df
@@ -108,11 +109,11 @@ def create_job_location(data):
     job_loc = JobLocation()
 
     #If only building a partial database then sometimes the job_id might not exist
-    try: job_loc.job = Job.objects.get(id=occ_code_to_int(data.OCC_CODE))
+    try:    job_loc.job = Job.objects.get(id=occ_code_to_int(data.OCC_CODE))
     except: return
 
     #If only building a partial database then sometimes the location_id might not exist
-    try: job_loc.location = Location.objects.get(id=data.AREA)
+    try:    job_loc.location = Location.objects.get(id=data.AREA)
     except: return
 
     job_loc.employed = clean_data(data.TOT_EMP)
@@ -126,16 +127,16 @@ def create_job_location(data):
 
     job_loc.save()
 
-def create_job_location_fast(data):
-    if data.OCC_CODE != "00-0000":
-        create_job_location(data)
-        # if data.AREA > 100:
-        #     #if str(data.AREA)[-1:] != '4': #Do not include Divisions
-        #     create_job_location(data,'area')
-        # else:
-        #     create_job_location(data,'state')
-
-    return None
+# def create_job_location_fast(data):
+#     if data.OCC_CODE != "00-0000":
+#         create_job_location(data)
+#         # if data.AREA > 100:
+#         #     #if str(data.AREA)[-1:] != '4': #Do not include Divisions
+#         #     create_job_location(data,'area')
+#         # else:
+#         #     create_job_location(data,'state')
+#
+#     return None
 
 
 def clean_data(data):
@@ -164,22 +165,40 @@ def main(year,raw_data_path):
             parents[row.OCC_GROUP] = row.OCC_CODE
             create_job(row,parents)
 
+
+
+    def df_to_db(df):
+        job_loc_count = 0
+        last_percent = 0
+
+        for row in df.itertuples():
+            if row.OCC_CODE != '00-0000':
+                percent_finished = job_loc_count / len(df.index) * 100
+
+                if percent_finished - last_percent > 5:
+                    last_percent = percent_finished
+                    print("{0:.0f}".format(percent_finished) + '% completed.')
+
+                create_job_location(row)
+                job_loc_count += 1
+
     print('Building job locations by state')
-    for row in data['State']['state'].itertuples():
-        if row.OCC_CODE != '00-0000':
-            # create_job_location(row,'state')
-            create_job_location(row)
+    df_to_db(data['State']['state'])
+
+    print('Building job locations by Metropolitan Area')
+    df_to_db(data['Metropolitan']['MSA'])
+    df_to_db(data['Metropolitan']['aMSA'])
+
 
     #might be worth making this a loop and printing the percentage
-    print('Building job locations by Metropolitan Area')
-    df =  data['Metropolitan']['MSA']
-    df.apply(create_job_location_fast,axis=1)
+    #print('Building job locations by Metropolitan Area')
+    #df =  data['Metropolitan']['MSA']
+    #df.apply(create_job_location_fast,axis=1)
 
-    df =  data['Metropolitan']['aMSA']
-    df.apply(create_job_location_fast,axis=1)
+    #df =  data['Metropolitan']['aMSA']
+    #df.apply(create_job_location_fast,axis=1)
 
-# ^^^ Took over an hour to process, might need to just use pd.to_sql()
-#Disgregard the above ^^^
+
 
 
 

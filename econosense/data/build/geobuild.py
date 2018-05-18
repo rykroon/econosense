@@ -103,12 +103,10 @@ def create_combined_area(data):
 def create_area(data):
     area = Area()
 
-    try: area.id = data.METDIVFP
+    try: area.id = data.METDIVFP #id for Metropolitan Divisions
     except:
-        try: area.id = data.NCTADVFP
-        except: area.id = data.GEOID
-
-    if partialdb.skip_area(area): return
+        try: area.id = data.NCTADVFP #id for NECTA Divisions
+        except: area.id = data.GEOID #id for other
 
     area.name = data.NAME
     area.lsad_name = data.NAMELSAD
@@ -120,23 +118,30 @@ def create_area(data):
     area.combined_area = None
 
 
+    if partialdb.skip_area(area): return
+
+
     #Get Parent Area if it exists
-    try: parent_id = int(data.CBSAFP)
+    try: parent_id = int(data.CBSAFP) #parent for metropolitan divisions
     except:
-        try: parent_id = int(data.NECTAFP)
+        try: parent_id = int(data.NECTAFP) #parent for NECTA divisions
         except: parent_id = None
 
 
     if parent_id is not None and parent_id != area.id:
         #if building a partial database then the parent may not exist
         try:    area.parent = Area.objects.get(id=parent_id)
-        except: return
+        except:
+            if partialdb.status() == False:
+                print('Could not find parent of area ' + area.name)
+            else:
+                return
 
 
     #Get Combined Area if it exists
-    try: combined_area_id = int(data.CSAFP)
+    try: combined_area_id = int(data.CSAFP) #combined area for metropolitan divisions
     except:
-        try: combined_area_id = int(data.CNECTAFP)
+        try: combined_area_id = int(data.CNECTAFP) #combined area for NECTA divisions
         except: combined_area_id = None
 
     if combined_area_id is not None:

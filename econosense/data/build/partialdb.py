@@ -14,6 +14,9 @@ class PartialDatabase():
         except:
             self.PARTIAL_DATABASE = False
 
+    def status(self):
+        return self.PARTIAL_DATABASE
+
 
     def skip_job(self,job):
         if self.PARTIAL_DATABASE:
@@ -28,7 +31,7 @@ class PartialDatabase():
 
     def skip_state(self,state):
         if self.PARTIAL_DATABASE:
-            if state.region.id in [2,4]:
+            if state.division.id not in [1,2,5]: #only keep east coast states
                 return True
 
         return False
@@ -40,6 +43,10 @@ class PartialDatabase():
 
             #do not add areas where the second digit from the left is greater than zero
             if int(area_id[1]) > 0:
+                return True
+
+            #do not include Micropolitan areas
+            if area.lsad in ['M2','M6']:
                 return True
 
         return False
