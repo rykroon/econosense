@@ -64,7 +64,6 @@ def get_data(table,year,raw_data_path):
     for file in files_in_working_directory:
         file_path = os.path.join(working_directory,file)
 
-        #if file_path[-8:] == '_dl.xlsx':
         if file_path.endswith('_dl.xlsx'):
             frame_name = file[:file.index('_')]
             df = pd.read_excel(file_path)
@@ -72,8 +71,6 @@ def get_data(table,year,raw_data_path):
             df.to_csv(os.path.join(working_directory,frame_name + '.csv'),index=False)
             os.remove(file_path)
 
-
-        #elif file_path[-4:] == '.csv':
         elif file_path.endswith('.csv'):
             frame_name = file[:file.index('.')]
             df = pd.read_csv(file_path)
@@ -86,9 +83,7 @@ def create_job(data,parents):
     job = Job()
     job.id = occ_code_to_int(data.OCC_CODE)
 
-
     if partialdb.skip_job(job): return
-
 
     job.title = data.OCC_TITLE
     job.group = data.OCC_GROUP
@@ -103,21 +98,9 @@ def create_job(data,parents):
 
     job.save()
 
+
 def occ_code_to_int(occ_code):
     return int(occ_code[:2] + occ_code[3:])
-
-
-#Created this because of 10,000 row limit in Heroku Postgres Free Tier
-# def skip_job(job):
-#     if PARTIAL_DATABASE:
-#         str_id = str(job.id)
-#
-#         #do not add jobs where the third digit from the left is greater than one
-#         if int(str_id[2]) > 1 or job.id >= 300000:
-#             return True
-#
-#     return False
-
 
 
 #def create_job_location(data,location_type):
@@ -187,6 +170,7 @@ def main(year,raw_data_path):
             # create_job_location(row,'state')
             create_job_location(row)
 
+    #might be worth making this a loop and printing the percentage
     print('Building job locations by Metropolitan Area')
     df =  data['Metropolitan']['MSA']
     df.apply(create_job_location_fast,axis=1)
