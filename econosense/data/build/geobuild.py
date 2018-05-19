@@ -23,9 +23,11 @@ def get_data(directory,year,raw_data_path):
     #Create Working Directory if it doesn't exist.
     if not os.path.isdir(os.path.join(raw_data_path,year)):
         os.mkdir(os.path.join(raw_data_path,year))
+        print('Created directory ' + os.path.join(raw_data_path,year))
 
     if not os.path.isdir(os.path.join(raw_data_path,year,directory)):
         os.mkdir(os.path.join(raw_data_path,year,directory))
+        print('Created directory ' + os.path.join(raw_data_path,year,directory))
 
     working_directory = os.path.join(raw_data_path,year,directory)
 
@@ -101,6 +103,8 @@ def create_combined_area(data):
 
 
 def create_area(data):
+    #print('we made it inside the create_area function')
+
     area = Area()
 
     try: area.id = data.METDIVFP #id for Metropolitan Divisions
@@ -120,7 +124,6 @@ def create_area(data):
 
     if partialdb.skip_area(area): return
 
-
     #Get Parent Area if it exists
     try: parent_id = int(data.CBSAFP) #parent for metropolitan divisions
     except:
@@ -135,7 +138,7 @@ def create_area(data):
             if partialdb.status() == False:
                 print('Could not find parent of area ' + area.name)
             else:
-                return
+                pass#return
 
 
     #Get Combined Area if it exists
@@ -207,13 +210,13 @@ def main(year,raw_data_path):
     for directory in directories:
         data_frames[directory] = get_data(directory, year, raw_data_path)
 
+    print('\n')
     print('Building Regions and Divisions')
     create_regions_and_divisons()
 
     #for key,value in data_frames.items():
     for key in directories:
         print('Building data from geo directory ' + key)
-
 
         value = data_frames[key]
         print('Dataframe ' + key + ' has ' + str(len(value.index)) + ' rows of data')
@@ -226,6 +229,8 @@ def main(year,raw_data_path):
 
             elif key in ['CBSA','NECTA','METDIV','NECTADIV']:
                 create_area(row)
+
+        print('\n')
 
     print(str(partialdb.skip_count) + ' locations have been skipped')
 
