@@ -214,7 +214,9 @@ def main(year,raw_data_path):
     for key in directories:
         print('Building data from geo directory ' + key)
 
+
         value = data_frames[key]
+        print('Dataframe ' + key + ' has ' + str(len(value.index)) + ' rows of data')
         for row in value.itertuples():
             if key == 'STATE':
                 create_state(row)
@@ -224,6 +226,8 @@ def main(year,raw_data_path):
 
             elif key in ['CBSA','NECTA','METDIV','NECTADIV']:
                 create_area(row)
+
+    print(str(partialdb.skip_count) + ' locations have been skipped')
 
             # if key == 'METDIV':         create_area_div(row)
             # if key == 'NECTADIV':       create_necta_div(row)

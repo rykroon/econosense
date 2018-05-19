@@ -57,6 +57,7 @@ def main(year):
             response = requests.get(base_url,params=params)
 
             if response.status_code == 200:
+                print('Requesting data from ' + response.url)
                 result = response.json()
 
                 for row in result[1:]:
@@ -96,6 +97,7 @@ def main(year):
             else:
                 print('There was an issue with URL: ' + response.url)
 
+        print('\n')
         for key,rent in rents.items():
             rent.save()
 
