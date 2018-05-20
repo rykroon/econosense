@@ -10,7 +10,7 @@ class PartialDatabase():
 
     def __init__(self):
         try:
-            self.PARTIAL_DATABASE = os.environ['PARTIAL_DATABASE']
+            self.PARTIAL_DATABASE = os.environ['PARTIAL_DATABASE'] == 'True'
         except:
             self.PARTIAL_DATABASE = False
 

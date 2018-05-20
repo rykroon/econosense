@@ -9,54 +9,68 @@
 
 
 <div class='row my-3 '>
-  <div class='col-12 offset-md-1 col-md-5'>
+  <div class='col-12 offset-md-2 col-md-8'>
     <form method='GET' class='needs-validation' novalidate>
 
       <!-- Major Job  -->
-      <div class='form-group '>
-        <label for='{{ form.job_category.id_for_label }}'> {{ form.job_category.label }} (optional) </label>
-        {{ form.job_category }}
+      <div class='form-row'>
+        <div class='col-12 col-md-10'>
+          <div class='form-group '>
+            <label for='{{ form.job_category.id_for_label }}'> {{ form.job_category.label }} (optional) </label>
+            {{ form.job_category }}
+          </div>
+        </div>
       </div>
 
       <!-- Job  -->
-      <div class='form-group'>
-        <label for='{{ form.job.id_for_label }}'> {{ form.job.label }} </label>
-        {{ form.job }}
-        <div class="invalid-feedback">
-          Job is missing
+      <div class='form-row'>
+        <div class='col-12'>
+          <div class='form-group'>
+            <label for='{{ form.job.id_for_label }}'> {{ form.job.label }} </label>
+            {{ form.job }}
+            <div class="invalid-feedback">
+              Job is missing
+            </div>
+          </div> <!-- form-group -->
         </div>
-      </div>
+      </div> <!-- form-row -->
 
       <!-- Location Type -->
-      <div class='form-group'>
-        <label for='{{ form.location_type.id_for_label }}'> {{ form.location_type.label }} </label>
-        <div>
+      <div class='form-row'>
+        <div class='col-12'>
+          <div class='form-group'>
+            <label for='{{ form.location_type.id_for_label }}'> {{ form.location_type.label }} </label>
 
-          {% for radio in form.location_type %}
-          <div class='custom-control custom-radio custom-control-inline'>
-            {{ radio.tag }}
-            <label class='custom-control-label' for='{{ radio.id_for_label }}'>{{ radio.choice_label }}</label>
-          </div>
-          {% endfor %}
+            <div>
+              {% for radio in form.location_type %}
+              <div class='custom-control custom-radio custom-control-inline'>
+                {{ radio.tag }}
+                <label class='custom-control-label' for='{{ radio.id_for_label }}'>{{ radio.choice_label }}</label>
+              </div>
+              {% endfor %}
+            </div>
 
+          </div> <!-- form-group -->
         </div>
-      </div> <!-- /location type -->
+      </div> <!-- form-row -->
+      <!-- /location type -->
 
-      <!-- Apartment  -->
-      <div class='form-group'>
-        <label for='{{ form.apartment.id_for_label }}'> {{ form.apartment.label }} </label>
-        {{ form.apartment }}
+      <!-- Rent  -->
+      <div class='form-row'>
+        <div class='col-12 col-md-4'>
+          <div class='form-group'>
+            <label for='{{ form.rent.id_for_label }}'> {{ form.rent.label }} </label>
+            {{ form.rent }}
+          </div>
+        </div>
       </div>
-
       <!-- Submit Button -->
       <button type='submit' class='btn btn-primary'>Search</button>
     </form>
   </div>
 
-  <div class='col-md-5 border-left d-none d-md-block'>
-
-
-  </div>
+  <!-- <div class='col-md-5 border-left d-none d-md-block'>
+  </div> -->
 
 </div> <!-- row -->
 

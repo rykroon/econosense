@@ -40,7 +40,7 @@ class BestPlacesToWorkView(FormView):
     def calculate_best_place_to_work(self,form):
         job = form.cleaned_data['job']
         location_type = form.cleaned_data['location_type']
-        apartment = form.cleaned_data['apartment']
+        apartment = form.cleaned_data['rent']
 
         for choice in form.fields['location_type'].choices:
             if choice[0] == location_type: location_name = choice[1]
@@ -91,6 +91,9 @@ class BestPlacesToWorkView(FormView):
             (.5 * self.normalize(df['jobs_1000'])) +
             (.25 * (1 - self.normalize(df[rent_col_name]))))
 
+        # df['score'] = ((.5 * df['jobs_1000']) * (.25 * (df['median'] / df[rent_col_name])))
+        # df['score'] = self.normalize(df['score']) * 100
+
 
         #Sort by Score and add indexes
         df = df.sort_values(by='score',ascending=False)
@@ -106,7 +109,7 @@ class BestPlacesToWorkView(FormView):
                 'rank'              : 'Rank',
                 'median'            : 'Salary',
                 rent_col_name       : 'Rent',
-                'jobs_1000'         : 'Jobs per 1000',
+                'jobs_1000'         : 'Employment per 1000 jobs',
                 'location__name'    : location_name,
                 'score'             : 'Score'
             }
@@ -114,12 +117,12 @@ class BestPlacesToWorkView(FormView):
 
         #tool tooltips
         tool_tips = {
-            'Rank'          :   "Rank",
-            'Salary'        :   'Median annual salary',
-            'Rent'          :   'Median gross monthly rent',
-            'Jobs per 1000' :   'Workers per 1000 jobs',
-            location_name   :   location_name,
-            'Score'         :   'Score'
+            'Rank'                      :   "Rank",
+            'Salary'                    :   'Median annual salary',
+            'Rent'                      :   'Median gross monthly rent',
+            'Employment per 1000 jobs'  :   'The number of jobs in the given occupation per 1,000 jobs in the given area.',
+            location_name               :   location_name,
+            'Score'                     :   'Employment per 1000 jobs is 50%, Salary is 25%, and Rent is 25%'
         }
 
         #align text right for numeric data types and align text left for text
@@ -168,7 +171,7 @@ class RentToIncomeRatioView(FormView):
             result = self.calculate_rent_to_income_ratio(form)
             print(datetime.now() - start)
             context['table_one'] = result['good_jobs']
-            context['table_two'] = result['bad_jobs']
+            #context['table_two'] = result['bad_jobs']
 
         return self.render_to_response(context)
 
@@ -177,7 +180,7 @@ class RentToIncomeRatioView(FormView):
     def calculate_rent_to_income_ratio(self,form):
         location_type = form.cleaned_data['location_type']
         location = form.cleaned_data['location']
-        apartment = form.cleaned_data['apartment']
+        apartment = form.cleaned_data['rent']
 
         rent_column_name = 'location__rent__' + apartment
         if apartment != 'total':
@@ -250,7 +253,7 @@ class RentToIncomeRatioView(FormView):
                 'Job'       :   'Job title',
                 'Rent'      :   'Median gross monthly rent',
                 'Salary'    :   'Median annual salary',
-                'Ratio'     :   'Rent to income ratio'
+                'Ratio'     :   'The monthly rent x 12 / annual salary'
             }
 
             for col in df.columns:

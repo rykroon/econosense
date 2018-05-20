@@ -11,38 +11,50 @@
 
 <!-- Form -->
 <div class='row my-3'>
-  <div class='col-12 offset-md-1 col-md-5'>
+  <div class='col-12 offset-md-2 col-md-8'>
     <form method='GET' class='needs-validation' novalidate>
 
       <!-- Location type -->
-      <div class='form-group'>
-        <label for='{{ form.location_type.id_for_label }}'> {{ form.location_type.label }} </label>
+      <div class='form-row'>
+        <div class='col-12'>
+          <div class='form-group'>
+            <label for='{{ form.location_type.id_for_label }}'> {{ form.location_type.label }} </label>
 
-        <div id='radios'>
-          {% for radio in form.location_type %}
-          <div class='custom-control custom-radio custom-control-inline'>
-            {{ radio.tag }}
-            <label class='custom-control-label' for='{{ radio.id_for_label }}'>{{ radio.choice_label }}</label>
-          </div>
-          {% endfor %}
+            <div id='radios'>
+              {% for radio in form.location_type %}
+              <div class='custom-control custom-radio custom-control-inline'>
+                {{ radio.tag }}
+                <label class='custom-control-label' for='{{ radio.id_for_label }}'>{{ radio.choice_label }}</label>
+              </div>
+              {% endfor %}
+            </div>
+          </div> <!-- form-group -->
         </div>
-
-      </div> <!-- /location type -->
+      </div> <!-- form-row -->
+      <!-- end location type -->
 
       <!-- Location -->
-      <div class='form-group '>
-        <label for='{{ form.location.id_for_label }}'> {{ form.location.label }} </label>
-        {{ form.location }}
-        <div class='invalid-feedback'>
-          Location is missing
+      <div class='form-row'>
+        <div class='col-12 col-md-8'>
+          <div class='form-group '>
+            <label for='{{ form.location.id_for_label }}'> {{ form.location.label }} </label>
+            {{ form.location }}
+            <div class='invalid-feedback'>
+              Location is missing
+            </div>
+          </div> <!-- form-group -->
         </div>
-      </div>
+      </div> <!-- form-row -->
 
       <!-- Apartment -->
-      <div class='form-group'>
-        <label for='{{ form.apartment.id_for_label }}'> {{ form.apartment.label }} </label>
-        {{ form.apartment }}
-      </div>
+      <div class='form-row'>
+        <div class='col-12 col-md-4'>
+          <div class='form-group'>
+            <label for='{{ form.rent.id_for_label }}'> {{ form.rent.label }} </label>
+            {{ form.rent }}
+          </div> <!-- form-group -->
+        </div>
+      </div> <!-- form-row -->
 
       <!-- Submit Button -->
       <button type='submit' class='btn btn-primary'>Search</button>
@@ -50,8 +62,8 @@
     </form>
   </div> <!-- end column-->
 
-  <div class='col-md-5 border-left d-none d-md-block'>
-  </div> <!-- end column-->
+  <!-- <div class='col-md-5 border-left d-none d-md-block'>
+  </div>  -->
 
 </div> <!-- end row -->
 
@@ -75,7 +87,7 @@
 
         <tbody>
           <!-- { for index,row in table_one.data.iterrows } -->
-          {% for index,field1,field2,field3,field4,field5 in table_one.data.itertuples %}
+          {% for index,rank,job,rent,salary,ratio in table_one.data.itertuples %}
           <tr>
             <!-- <td class="text-right">{{ row.0 }}</td>
             <td class="text-left">{{ row.1 }}</td>
@@ -83,11 +95,17 @@
             <td class="text-right">{{ row.3 }}</td>
             <td class="text-right">{{ row.4 }}</td> -->
 
-            <td class="text-right">{{ field1 }}</td>
-            <td class="text-left">{{ field2 }}</td>
-            <td class="text-right">{{ field3 }}</td>
-            <td class="text-right">{{ field4 }}</td>
-            <td class="text-right">{{ field5 }}</td>
+            <td class="text-right">{{ rank }}</td>
+            <td class="text-left">{{ job }}</td>
+            <td class="text-right">{{ rent }}</td>
+            {% if salary == '$999,999.99' %}
+            <td class="text-right">> $208,000.00</td> <!-- check field_description.xlsx for max salary-->
+            <td class="text-right">--</td>
+            {% else %}
+            <td class="text-right">{{ salary }}</td>
+            <td class="text-right">{{ ratio }}</td>
+            {% endif %}
+
           </tr>
           {% endfor %}
         </tbody>

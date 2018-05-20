@@ -36,9 +36,9 @@ class BestPlacesToWorkForm(forms.Form):
     )
 
 
-    APARTMENT_CHOICES = (
-        ('total','Any'),
-        ('no','No bedroom'),
+    RENT_CHOICES = (
+        ('total','All'),
+        ('no','Studio'),
         ('one','1 bedroom'),
         ('two','2 bedrooms'),
         ('three','3 bedrooms'),
@@ -46,36 +46,18 @@ class BestPlacesToWorkForm(forms.Form):
         ('five','5 or more bedrooms'),
     )
 
-    apartment = forms.ChoiceField(
-        choices=APARTMENT_CHOICES,
+    rent = forms.ChoiceField(
+        choices=RENT_CHOICES,
         initial='total',
         widget=forms.Select(attrs={'class': 'custom-select'})
     )
-
-    # def clear_classes(self):
-    #     self.fields['job_category'].widget.attrs['class'] = ''
-    #     self.fields['job'].widget.attrs['class'] = ''
-    #     self.fields['location_type'].widget.attrs['class'] = ''
-    #     self.fields['apartment'].widget.attrs['class'] = ''
 
     def custom_bootstrap(self):
         self.fields['job_category'].widget.attrs['class'] = 'custom-select'
         self.fields['job'].widget.attrs['class'] = 'custom-select'
         self.fields['location_type'].widget.attrs['class'] = 'custom-control-input'
-        self.fields['apartment'].widget.attrs['class'] = 'custom-select'
+        self.fields['rent'].widget.attrs['class'] = 'custom-select'
 
-    # def bootstrap_material_design(self):
-    #     self.fields['job_category'].widget.attrs['class'] = 'form-control'
-    #     self.fields['job'].widget.attrs['class'] = 'form-control'
-    #     #self.fields['location_type'].widget.attrs['class'] = 'custom-control-input'
-    #     self.fields['apartment'].widget.attrs['class'] = 'form-control'
-    #
-    #
-    # def material_design(self):
-    #     self.fields['job_category'].widget.attrs['class'] = 'mdl-textfield__input'
-    #     self.fields['job'].widget.attrs['class'] = 'mdl-textfield__input'
-    #     self.fields['location_type'].widget.attrs['class'] = 'mdl-radio__button'
-    #     self.fields['apartment'].widget.attrs['class'] = 'mdl-textfield__input'
 
 
 
@@ -108,9 +90,9 @@ class RentToIncomeRatioForm(forms.Form):
     )
 
 
-    APARTMENT_CHOICES = (
-        ('total','Any'),
-        ('no','No bedroom'),
+    RENT_CHOICES = (
+        ('total','All'),
+        ('no','Studio'),
         ('one','1 bedroom'),
         ('two','2 bedrooms'),
         ('three','3 bedrooms'),
@@ -118,8 +100,8 @@ class RentToIncomeRatioForm(forms.Form):
         ('five','5 or more Bedrooms'),
     )
 
-    apartment       = forms.ChoiceField(
-        choices=APARTMENT_CHOICES,
+    rent       = forms.ChoiceField(
+        choices=RENT_CHOICES,
         initial='total',
         widget=forms.Select(attrs={'class': 'custom-select'})
     )
