@@ -3,7 +3,7 @@ from django.views import View
 from django.views.generic.edit import FormView
 from django.db.models import F,FloatField,DecimalField,ExpressionWrapper
 from datetime import datetime
-
+from audit.models import *
 
 from .forms import BestPlacesToWorkForm, RentToIncomeRatioForm
 from data.models import JobLocation, Job #, State, Area
@@ -25,7 +25,12 @@ class BestPlacesToWorkView(FormView):
     success_url = '/best-places-to-work/'
 
 
+
     def get(self, request, *args, **kwargs):
+        audit = RequestAudit()
+        audit.populate_fields(request)
+        audit.save()
+
         form = BestPlacesToWorkForm(request.GET or None)
         if self.material_design: form.material_design()
         context = dict()
@@ -154,14 +159,16 @@ class BestPlacesToWorkView(FormView):
 
 
 
-
-
 class RentToIncomeRatioView(FormView):
     http_method_names = ['get']
     template_name = 'rent_to_income_ratio.html'
     success_url = '/rent-to-income-ratio/'
 
     def get(self, request, *args, **kwargs):
+        audit = RequestAudit()
+        audit.populate_fields(request)
+        audit.save()
+
         form = RentToIncomeRatioForm(request.GET or None)
         context = dict()
         context['form'] = form

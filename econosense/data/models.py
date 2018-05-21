@@ -23,7 +23,7 @@ class Location(models.Model):
         db_table = 'location'
 
     def __str__(self):
-        return self.name
+        return self.lsad_name
 
 #!! potentially change Region and Division so that they inherit from Location
 class Region(models.Model):
@@ -204,7 +204,7 @@ class Rent(models.Model):
         db_table = 'rent'
 
     def __str__(self):
-        return self.location + ' Rent'
+        return self.location.lsad_name + ' Rent'
 
 
 # class Income(models.Model):

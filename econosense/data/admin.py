@@ -3,3 +3,7 @@ from .models import *
 
 
 # Register your models here.
+admin.site.register(Location)
+admin.site.register(Job)
+admin.site.register(JobLocation)
+admin.site.register(Rent)
