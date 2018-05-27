@@ -31,4 +31,5 @@ class RequestAudit(models.Model):
         # except: pass
 
 
-        #
+    def __str__(self):
+        return self.method + ' request to path ' + self.path
