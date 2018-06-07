@@ -97,14 +97,13 @@ def create_job(data,parents):
     if data.OCC_GROUP == 'broad': parent = parents['minor']
     if data.OCC_GROUP == 'detailed': parent = parents['broad']
 
-    if parent is None: job.parent = None
+    if parent is None:
+        job.parent = None
     else:
-        #job.parent = Job.objects.get(id=occ_code_to_int(parent))
-        job.parent = Job()
-        job.parent.id = occ_code_to_int(parent)
+        job.parent = Job.objects.get(id=occ_code_to_int(parent))
 
-    #job.save()
-    return job
+    job.save()
+
 
 def occ_code_to_int(occ_code):
     return int(occ_code[:2] + occ_code[3:])
@@ -112,18 +111,25 @@ def occ_code_to_int(occ_code):
 
 #def create_job_location(data,location_type):
 #def create_job_location(data):
-def create_job_location(data,pk):
+#def create_job_location(data,pk):
+def create_job_location(data,pk,last_location):
     job_loc = JobLocation()
     job_loc.id = pk
 
     #If only building a partial database then sometimes the job_id might not exist
-    try:    job_loc.job = Job.objects.get(id=occ_code_to_int(data.OCC_CODE))
+    try:
+        job_loc.job = Job.objects.get(id=occ_code_to_int(data.OCC_CODE))
     except:
         print("job not found: " + str(occ_code_to_int(data.OCC_CODE)))
         return None
 
     #If only building a partial database then sometimes the location_id might not exist
-    try:    job_loc.location = Location.objects.get(id=data.AREA)
+    try:
+        if last_location is not None and last_location.id == data.AREA:
+            job_loc.location = last_location
+        else:
+            print('Querying database for Location with id ' + str(data.AREA))
+            job_loc.location = Location.objects.get(id=data.AREA)
     except:
         print("Location not found: " + str(data.AREA))
         return None
@@ -140,18 +146,6 @@ def create_job_location(data,pk):
     #job_loc.save()
     return job_loc
 
-
-
-# def create_job_location_fast(data):
-#     if data.OCC_CODE != "00-0000":
-#         create_job_location(data)
-#         # if data.AREA > 100:
-#         #     #if str(data.AREA)[-1:] != '4': #Do not include Divisions
-#         #     create_job_location(data,'area')
-#         # else:
-#         #     create_job_location(data,'state')
-#
-#     return None
 
 
 def clean_data(data):
@@ -174,29 +168,14 @@ def main(year,raw_data_path):
         data[table] = get_data(table, year, raw_data_path)
 
 
-    parents = {}
-
-    jobs = dict()
-    jobs['major'] = list()
-    jobs['minor'] = list()
-    jobs['broad'] = list()
-    jobs['detailed'] = list()
-
     print('\n')
     print('Building jobs')
+    parents = {}
 
     for row in data['National']['national'].itertuples():
         if row.OCC_CODE != '00-0000':
             parents[row.OCC_GROUP] = row.OCC_CODE
-            #create_job(row,parents)
-
-            job = create_job(row,parents)
-            jobs[job.group].append(job)
-
-    Job.objects.bulk_create(jobs['major'])
-    Job.objects.bulk_create(jobs['minor'])
-    Job.objects.bulk_create(jobs['broad'])
-    Job.objects.bulk_create(jobs['detailed'])
+            create_job(row,parents)
 
     print('\n')
 
@@ -213,6 +192,7 @@ def main(year,raw_data_path):
         else: pk = max
 
         df_length = len(df.index)
+        last_location = None
 
         for row in df.itertuples():
             if row.OCC_CODE != '00-0000':
@@ -227,9 +207,13 @@ def main(year,raw_data_path):
                 #job_loc_count += 1
 
                 pk += 1
-                job_location = create_job_location(row,pk)
+                #job_location = create_job_location(row,pk)
+                job_location = create_job_location(row,pk,last_location)
+                last_location = job_location.location
+
                 if job_location is not None:
                     job_loc_list.append(job_location)
+
                 job_loc_count += 1
 
                 batch_size = 20000
@@ -241,15 +225,35 @@ def main(year,raw_data_path):
         print("Inserting batch of " + str(len(job_loc_list)) + " records")
         JobLocation.objects.bulk_create(job_loc_list)
 
+
     print('Building job locations by state')
     start = datetime.now()
     df_to_db(data['State']['state'])
     end = datetime.now()
+
+    print('\n')
     print(end-start)
+    print('\n')
+
 
     print('Building job locations by Metropolitan Area')
+    start = datetime.now()
     df_to_db(data['Metropolitan']['MSA'])
+    end = datetime.now()
+
+    print('\n')
+    print(end-start)
+    print('\n')
+
+
+    print('Building job locations by Metropolitan Area 2')
+    start = datetime.now()
     df_to_db(data['Metropolitan']['aMSA'])
+    end = datetime.now()
+
+    print('\n')
+    print(end-start)
+    print('\n')
 
 
     #might be worth making this a loop and printing the percentage
