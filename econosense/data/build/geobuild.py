@@ -136,6 +136,7 @@ def create_area(data):
         try:    area.parent = Area.objects.get(id=parent_id)
         except:
             if partialdb.status() == False:
+                #test this out
                 print('Could not find parent of area ' + area.name)
             else:
                 pass#return

@@ -12,6 +12,7 @@ try:
         int(year)
     except:
         print('Year must be numeric')
+        sys.exit(0)
 
 except:
     print("Must specify a year")

@@ -5,6 +5,7 @@ import requests
 import zipfile
 import pandas as pd
 from data.build.partialdb import PartialDatabase
+from datetime import datetime
 
 
 #Set up Django Environment
@@ -13,7 +14,9 @@ sys.path.append(os.getcwd())
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "econosense.settings")
 django.setup()
 
+from django.db.models import Max
 from data.models import Job,JobLocation,Area,State,Location
+
 
 partialdb = PartialDatabase()
 
@@ -95,26 +98,35 @@ def create_job(data,parents):
     if data.OCC_GROUP == 'detailed': parent = parents['broad']
 
     if parent is None: job.parent = None
-    else: job.parent = Job.objects.get(id=occ_code_to_int(parent))
+    else:
+        #job.parent = Job.objects.get(id=occ_code_to_int(parent))
+        job.parent = Job()
+        job.parent.id = occ_code_to_int(parent)
 
-    job.save()
-
+    #job.save()
+    return job
 
 def occ_code_to_int(occ_code):
     return int(occ_code[:2] + occ_code[3:])
 
 
 #def create_job_location(data,location_type):
-def create_job_location(data):
+#def create_job_location(data):
+def create_job_location(data,pk):
     job_loc = JobLocation()
+    job_loc.id = pk
 
     #If only building a partial database then sometimes the job_id might not exist
     try:    job_loc.job = Job.objects.get(id=occ_code_to_int(data.OCC_CODE))
-    except: return
+    except:
+        print("job not found: " + str(occ_code_to_int(data.OCC_CODE)))
+        return None
 
     #If only building a partial database then sometimes the location_id might not exist
     try:    job_loc.location = Location.objects.get(id=data.AREA)
-    except: return
+    except:
+        print("Location not found: " + str(data.AREA))
+        return None
 
     job_loc.employed = clean_data(data.TOT_EMP)
     job_loc.jobs_1000 = clean_data(data.JOBS_1000)
@@ -125,7 +137,10 @@ def create_job_location(data):
     job_loc.pct_75 = clean_data(data.A_PCT75)
     job_loc.pct_90 = clean_data(data.A_PCT90)
 
-    job_loc.save()
+    #job_loc.save()
+    return job_loc
+
+
 
 # def create_job_location_fast(data):
 #     if data.OCC_CODE != "00-0000":
@@ -158,32 +173,79 @@ def main(year,raw_data_path):
     for table in tables:
         data[table] = get_data(table, year, raw_data_path)
 
+
     parents = {}
+
+    jobs = dict()
+    jobs['major'] = list()
+    jobs['minor'] = list()
+    jobs['broad'] = list()
+    jobs['detailed'] = list()
+
+    print('\n')
     print('Building jobs')
+
     for row in data['National']['national'].itertuples():
         if row.OCC_CODE != '00-0000':
             parents[row.OCC_GROUP] = row.OCC_CODE
-            create_job(row,parents)
+            #create_job(row,parents)
 
+            job = create_job(row,parents)
+            jobs[job.group].append(job)
 
+    Job.objects.bulk_create(jobs['major'])
+    Job.objects.bulk_create(jobs['minor'])
+    Job.objects.bulk_create(jobs['broad'])
+    Job.objects.bulk_create(jobs['detailed'])
+
+    print('\n')
 
     def df_to_db(df):
         job_loc_count = 0
         last_percent = 0
 
+        job_loc_list = list()
+
+        max = JobLocation.objects.all().aggregate(Max('id'))
+        max = max['id__max']
+
+        if max is None: pk = 0
+        else: pk = max
+
+        df_length = len(df.index)
+
         for row in df.itertuples():
             if row.OCC_CODE != '00-0000':
+                #percent_finished = job_loc_count / df_length * 100
                 percent_finished = job_loc_count / len(df.index) * 100
 
                 if percent_finished - last_percent > 5:
                     last_percent = percent_finished
                     print("{0:.0f}".format(percent_finished) + '% completed.')
 
-                create_job_location(row)
+                #create_job_location(row)
+                #job_loc_count += 1
+
+                pk += 1
+                job_location = create_job_location(row,pk)
+                if job_location is not None:
+                    job_loc_list.append(job_location)
                 job_loc_count += 1
 
+                batch_size = 20000
+                if len(job_loc_list) >= batch_size:
+                    print("Inserting batch of " + str(batch_size) + " records")
+                    JobLocation.objects.bulk_create(job_loc_list)
+                    job_loc_list.clear()
+
+        print("Inserting batch of " + str(len(job_loc_list)) + " records")
+        JobLocation.objects.bulk_create(job_loc_list)
+
     print('Building job locations by state')
+    start = datetime.now()
     df_to_db(data['State']['state'])
+    end = datetime.now()
+    print(end-start)
 
     print('Building job locations by Metropolitan Area')
     df_to_db(data['Metropolitan']['MSA'])
