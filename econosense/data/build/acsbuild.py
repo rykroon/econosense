@@ -1,6 +1,7 @@
 import sys
 import os
 import requests
+from datetime import datetime
 
 #Set up Django Environment
 import django
@@ -46,7 +47,7 @@ def main(year):
         'CNECTA'    :   'combined new england city and town area'
     }
 
-
+    start = datetime.now()
     for geo_key,geo_value in geographies.items(): #each geography
         rents = {}
 
@@ -78,10 +79,13 @@ def main(year):
                         rent = rents[loc_id]
                     except: #create new Rent object
                         rent = Rent()
+                        rent.location_id = loc_id
 
                         #If building a partial database then we might not find the location
-                        try: rent.location = Location.objects.get(id=loc_id)
-                        except: continue
+                        # try:
+                        #     rent.location = Location.objects.get(id=loc_id)
+                        # except:
+                        #     continue
 
 
                     if var_key == 'Total': rent.total = amount
@@ -98,9 +102,16 @@ def main(year):
                 print('There was an issue with URL: ' + response.url)
 
         print('\n')
-        for key,rent in rents.items():
-            rent.save()
 
+        rent_list = list(rents.values())
+        Rent.objects.bulk_create(rent_list)
+
+        #for key,rent in rents.items():
+        #    rent.save()
+
+
+    end = datetime.now()
+    print(end-start)
 
 
 

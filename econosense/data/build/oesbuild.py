@@ -109,30 +109,12 @@ def occ_code_to_int(occ_code):
     return int(occ_code[:2] + occ_code[3:])
 
 
-#def create_job_location(data,location_type):
-#def create_job_location(data):
-#def create_job_location(data,pk):
-def create_job_location(data,pk,last_location):
+
+def create_job_location(data):
     job_loc = JobLocation()
-    job_loc.id = pk
 
-    #If only building a partial database then sometimes the job_id might not exist
-    try:
-        job_loc.job = Job.objects.get(id=occ_code_to_int(data.OCC_CODE))
-    except:
-        print("job not found: " + str(occ_code_to_int(data.OCC_CODE)))
-        return None
-
-    #If only building a partial database then sometimes the location_id might not exist
-    try:
-        if last_location is not None and last_location.id == data.AREA:
-            job_loc.location = last_location
-        else:
-            print('Querying database for Location with id ' + str(data.AREA))
-            job_loc.location = Location.objects.get(id=data.AREA)
-    except:
-        print("Location not found: " + str(data.AREA))
-        return None
+    job_loc.job_id = occ_code_to_int(data.OCC_CODE)
+    job_loc.location_id = data.AREA
 
     job_loc.employed = clean_data(data.TOT_EMP)
     job_loc.jobs_1000 = clean_data(data.JOBS_1000)
@@ -143,7 +125,6 @@ def create_job_location(data,pk,last_location):
     job_loc.pct_75 = clean_data(data.A_PCT75)
     job_loc.pct_90 = clean_data(data.A_PCT90)
 
-    #job_loc.save()
     return job_loc
 
 
@@ -159,7 +140,6 @@ def main(year,raw_data_path):
     JobLocation.objects.all().delete()
 
     tables = ['National','State','Metropolitan']
-    #raw_data_path = 'oes/rawData'
 
     data = {}
 
@@ -180,8 +160,6 @@ def main(year,raw_data_path):
     print('\n')
 
     def df_to_db(df):
-        job_loc_count = 0
-        last_percent = 0
 
         job_loc_list = list()
 
@@ -191,30 +169,16 @@ def main(year,raw_data_path):
         if max is None: pk = 0
         else: pk = max
 
-        df_length = len(df.index)
-        last_location = None
-
         for row in df.itertuples():
             if row.OCC_CODE != '00-0000':
-                #percent_finished = job_loc_count / df_length * 100
-                percent_finished = job_loc_count / len(df.index) * 100
 
-                if percent_finished - last_percent > 5:
-                    last_percent = percent_finished
-                    print("{0:.0f}".format(percent_finished) + '% completed.')
-
-                #create_job_location(row)
-                #job_loc_count += 1
-
-                pk += 1
-                #job_location = create_job_location(row,pk)
-                job_location = create_job_location(row,pk,last_location)
-                last_location = job_location.location
+                job_location = create_job_location(row)
 
                 if job_location is not None:
+                    pk += 1
+                    job_location.id = pk
                     job_loc_list.append(job_location)
 
-                job_loc_count += 1
 
                 batch_size = 20000
                 if len(job_loc_list) >= batch_size:
@@ -227,50 +191,10 @@ def main(year,raw_data_path):
 
 
     print('Building job locations by state')
-    start = datetime.now()
     df_to_db(data['State']['state'])
-    end = datetime.now()
-
-    print('\n')
-    print(end-start)
-    print('\n')
-
 
     print('Building job locations by Metropolitan Area')
-    start = datetime.now()
     df_to_db(data['Metropolitan']['MSA'])
-    end = datetime.now()
-
-    print('\n')
-    print(end-start)
-    print('\n')
-
 
     print('Building job locations by Metropolitan Area 2')
-    start = datetime.now()
     df_to_db(data['Metropolitan']['aMSA'])
-    end = datetime.now()
-
-    print('\n')
-    print(end-start)
-    print('\n')
-
-
-    #might be worth making this a loop and printing the percentage
-    #print('Building job locations by Metropolitan Area')
-    #df =  data['Metropolitan']['MSA']
-    #df.apply(create_job_location_fast,axis=1)
-
-    #df =  data['Metropolitan']['aMSA']
-    #df.apply(create_job_location_fast,axis=1)
-
-
-
-
-
-
-
-
-
-
-#stuff

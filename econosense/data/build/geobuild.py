@@ -6,6 +6,8 @@ from simpledbf import Dbf5
 import pandas as pd
 from data.build.partialdb import PartialDatabase
 
+from datetime import datetime
+
 #Set up Django Environment
 import django
 sys.path.append(os.getcwd())
@@ -73,16 +75,18 @@ def get_data(directory,year,raw_data_path):
 def create_state(data):
     state = State()
 
-    state.id = data.GEOID
-    state.name = data.NAME
-    state.lsad_name = data.NAME
-    state.lsad = 'ST'
-    state.latitude = data.INTPTLAT
-    state.longitude = data.INTPTLON
+    state.id            = data.GEOID
+    state.name          = data.NAME
+    state.lsad_name     = data.NAME
+    state.lsad          = 'ST'
+    state.latitude      = data.INTPTLAT
+    state.longitude     = data.INTPTLON
 
-    state.initials = data.STUSPS
-    state.region = Region.objects.get(id=int(data.REGION))
-    state.division = Division.objects.get(id=int(data.DIVISION))
+    state.initials      = data.STUSPS
+    #state.region    = Region.objects.get(id=int(data.REGION))
+    #state.division  = Division.objects.get(id=int(data.DIVISION))
+    state.region_id     = data.REGION
+    state.division_id   = data.DIVISION
 
     if partialdb.skip_state(state): return
 
@@ -92,12 +96,12 @@ def create_state(data):
 def create_combined_area(data):
     csa = CombinedArea()
 
-    csa.id = data.GEOID
-    csa.name = data.NAME
-    csa.lsad_name = data.NAMELSAD
-    csa.lsad = data.LSAD
-    csa.latitude = data.INTPTLAT
-    csa.longitude = data.INTPTLON
+    csa.id          = data.GEOID
+    csa.name        = data.NAME
+    csa.lsad_name   = data.NAMELSAD
+    csa.lsad        = data.LSAD
+    csa.latitude    = data.INTPTLAT
+    csa.longitude   = data.INTPTLON
 
     csa.save()
 
@@ -112,44 +116,61 @@ def create_area(data):
         try: area.id = data.NCTADVFP #id for NECTA Divisions
         except: area.id = data.GEOID #id for other
 
-    area.name = data.NAME
-    area.lsad_name = data.NAMELSAD
-    area.lsad = data.LSAD
-    area.latitude = data.INTPTLAT
-    area.longitude = data.INTPTLON
+    area.name       = data.NAME
+    area.lsad_name  = data.NAMELSAD
+    area.lsad       = data.LSAD
+    area.latitude   = data.INTPTLAT
+    area.longitude  = data.INTPTLON
 
-    area.parent = None
-    area.combined_area = None
+    area.parent         = None
+    area.combined_area  = None
 
 
     if partialdb.skip_area(area): return
 
-    #Get Parent Area if it exists
-    try: parent_id = int(data.CBSAFP) #parent for metropolitan divisions
+
+    try:
+        if data.CBSAFP != area.id:
+            area.parent_id = data.CBSAFP
     except:
-        try: parent_id = int(data.NECTAFP) #parent for NECTA divisions
-        except: parent_id = None
+        if data.NECTAFP != area.id:
+            area.parent_id = data.NECTAFP
 
-
-    if parent_id is not None and parent_id != area.id:
-        #if building a partial database then the parent may not exist
-        try:    area.parent = Area.objects.get(id=parent_id)
-        except:
-            if partialdb.status() == False:
-                #test this out
-                print('Could not find parent of area ' + area.name)
-            else:
-                pass#return
+    #Get Parent Area if it exists
+    # try: parent_id = int(data.CBSAFP) #parent for metropolitan divisions
+    # except:
+    #     try: parent_id = int(data.NECTAFP) #parent for NECTA divisions
+    #     except: parent_id = None
+    #
+    #
+    # if parent_id is not None and parent_id != area.id:
+    #     #if building a partial database then the parent may not exist
+    #     try:    area.parent = Area.objects.get(id=parent_id)
+    #     except:
+    #         if partialdb.status() == False:
+    #             #test this out
+    #             print('Could not find parent of area ' + area.name)
+    #         else:
+    #             pass#return
 
 
     #Get Combined Area if it exists
-    try: combined_area_id = int(data.CSAFP) #combined area for metropolitan divisions
+    try:
+        area.combined_area_id = int(data.CSAFP)
     except:
-        try: combined_area_id = int(data.CNECTAFP) #combined area for NECTA divisions
-        except: combined_area_id = None
+        try:
+            area.combined_area_id = int(data.CNECTAFP)
+        except:
+            pass
 
-    if combined_area_id is not None:
-        area.combined_area = CombinedArea.objects.get(id=combined_area_id)
+    # try:
+    #     combined_area_id = int(data.CSAFP) #combined area for metropolitan divisions
+    # except:
+    #     try: combined_area_id = int(data.CNECTAFP) #combined area for NECTA divisions
+    #     except: combined_area_id = None
+    #
+    # if combined_area_id is not None:
+    #     area.combined_area = CombinedArea.objects.get(id=combined_area_id)
 
     area.save()
 
@@ -211,6 +232,8 @@ def main(year,raw_data_path):
     for directory in directories:
         data_frames[directory] = get_data(directory, year, raw_data_path)
 
+    start = datetime.now()
+
     print('\n')
     print('Building Regions and Divisions')
     create_regions_and_divisons()
@@ -233,6 +256,8 @@ def main(year,raw_data_path):
 
         print('\n')
 
+    end = datetime.now()
+    print(end-start)
     print(str(partialdb.skip_count) + ' locations have been skipped')
 
             # if key == 'METDIV':         create_area_div(row)
