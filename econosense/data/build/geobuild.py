@@ -60,9 +60,7 @@ def get_data(directory,year,raw_data_path):
 
     for file in files_in_working_directory:
         file_path = os.path.join(working_directory,file)
-        #extension = file_path[-3:]
 
-        #if extension == 'dbf':
         if file_path.endswith('.dbf'):
             dbf = Dbf5(file_path)
             df = dbf.to_dataframe()
@@ -107,14 +105,12 @@ def create_combined_area(data):
 
 
 def create_area(data):
-    #print('we made it inside the create_area function')
-
     area = Area()
 
-    try: area.id = data.METDIVFP #id for Metropolitan Divisions
+    try: area.id = data.METDIVFP        #id for Metropolitan Divisions
     except:
-        try: area.id = data.NCTADVFP #id for NECTA Divisions
-        except: area.id = data.GEOID #id for other
+        try: area.id = data.NCTADVFP    #id for NECTA Divisions
+        except: area.id = data.GEOID    #id for other
 
     area.name       = data.NAME
     area.lsad_name  = data.NAMELSAD
@@ -125,101 +121,95 @@ def create_area(data):
     area.parent         = None
     area.combined_area  = None
 
-
-    if partialdb.skip_area(area): return
-
-
     try:
-        if data.CBSAFP != area.id:
-            area.parent_id = data.CBSAFP
+        if data.CBSAFP != area.id:  area.parent_id = data.CBSAFP
     except:
-        if data.NECTAFP != area.id:
-            area.parent_id = data.NECTAFP
-
-    #Get Parent Area if it exists
-    # try: parent_id = int(data.CBSAFP) #parent for metropolitan divisions
-    # except:
-    #     try: parent_id = int(data.NECTAFP) #parent for NECTA divisions
-    #     except: parent_id = None
-    #
-    #
-    # if parent_id is not None and parent_id != area.id:
-    #     #if building a partial database then the parent may not exist
-    #     try:    area.parent = Area.objects.get(id=parent_id)
-    #     except:
-    #         if partialdb.status() == False:
-    #             #test this out
-    #             print('Could not find parent of area ' + area.name)
-    #         else:
-    #             pass#return
+        if data.NECTAFP != area.id: area.parent_id = data.NECTAFP
 
 
-    #Get Combined Area if it exists
-    try:
-        area.combined_area_id = int(data.CSAFP)
+    try:    area.combined_area_id = int(data.CSAFP)
     except:
-        try:
-            area.combined_area_id = int(data.CNECTAFP)
-        except:
-            pass
+        try:    area.combined_area_id = int(data.CNECTAFP)
+        except: pass
 
-    # try:
-    #     combined_area_id = int(data.CSAFP) #combined area for metropolitan divisions
-    # except:
-    #     try: combined_area_id = int(data.CNECTAFP) #combined area for NECTA divisions
-    #     except: combined_area_id = None
-    #
-    # if combined_area_id is not None:
-    #     area.combined_area = CombinedArea.objects.get(id=combined_area_id)
+    if partialdb.status():
+        if partialdb.skip_area(area):
+            return
+        else:
+            area.parent_id = None
 
     area.save()
 
 
 def create_regions_and_divisons():
+    Region.objects.all().delete()
+    Division.objects.all().delete()
+
+    regions = list()
     north_east = Region(id=1,name='Northeast')
-    north_east.save()
+    #north_east.save()
+    regions.append(north_east)
 
     mid_west = Region(id=2,name='Midwest')
-    mid_west.save()
+    #mid_west.save()
+    regions.append(mid_west)
 
     south = Region(id=3,name='South')
-    south.save()
+    #south.save()
+    regions.append(south)
 
     west = Region(id=4,name='West')
-    west.save()
+    #west.save()
+    regions.append(west)
 
     territory = Region(id=9,name='Territory')
-    territory.save()
+    #territory.save()
+    regions.append(territory)
 
+    Region.objects.bulk_create(regions)
+
+    divisions = list()
     territory_div = Division(id=0,name='Territory',region=territory)
-    territory_div.save()
+    #territory_div.save()
+    divisions.append(territory_div)
 
     new_england = Division(id=1,name='New England',region=north_east)
-    new_england.save()
+    #new_england.save()
+    divisions.append(new_england)
 
     mid_atlantic = Division(id=2,name='Mid-Atlantic',region=north_east)
-    mid_atlantic.save()
+    #mid_atlantic.save()
+    divisions.append(mid_atlantic)
 
     east_north_central = Division(id=3,name='East North Central',region=mid_west)
-    east_north_central.save()
+    #east_north_central.save()
+    divisions.append(east_north_central)
 
     west_north_central = Division(id=4,name='West North Central',region=mid_west)
-    west_north_central.save()
+    #west_north_central.save()
+    divisions.append(west_north_central)
 
     south_atlantic = Division(id=5,name='South Atlantic',region=south)
-    south_atlantic.save()
+    #south_atlantic.save()
+    divisions.append(south_atlantic)
 
     east_south_central = Division(id=6,name='East South Central',region=south)
-    east_south_central.save()
+    #east_south_central.save()
+    divisions.append(east_south_central)
 
     west_south_central = Division(id=7,name='West South Central',region=south)
-    west_south_central.save()
+    #west_south_central.save()
+    divisions.append(west_south_central)
 
     mountain = Division(id=8,name='Mountain',region=west)
-    mountain.save()
+    #mountain.save()
+    divisions.append(mountain)
 
     pacific = Division(id=9,name='Pacific',region=west)
-    pacific.save()
+    #pacific.save()
+    divisions.append(pacific)
+
+    Division.objects.bulk_create(divisions)
 
 
 def main(year,raw_data_path):
@@ -258,7 +248,7 @@ def main(year,raw_data_path):
 
     end = datetime.now()
     print(end-start)
-    print(str(partialdb.skip_count) + ' locations have been skipped')
+    print(str(len(partialdb.skipped_locations)) + ' locations have been skipped')
 
             # if key == 'METDIV':         create_area_div(row)
             # if key == 'NECTADIV':       create_necta_div(row)

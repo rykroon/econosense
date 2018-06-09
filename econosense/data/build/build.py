@@ -3,6 +3,7 @@ import os
 import acsbuild
 import oesbuild
 import geobuild
+from partialdb import PartialDatabase
 
 raw_data_path = 'data/build/rawdata'
 
@@ -40,6 +41,24 @@ for source in data_sources:
     if source in ['geo','oes'] and not os.path.isdir(path):
         os.mkdir(path)
 
-    if source == 'geo': geobuild.main(year,path)
-    if source == 'oes': oesbuild.main(year,path)
-    if source == 'acs': acsbuild.main(year)
+    partialdb = PartialDatabase()
+
+    if source == 'geo':
+        geobuild.partialdb = partialdb
+        geobuild.main(year,path)
+
+    partialdb = geobuild.partialdb
+
+    if source == 'oes':
+        oesbuild.partialdb = partialdb
+        oesbuild.main(year,path)
+
+    partialdb = oesbuild.partialdb
+    if source == 'acs':
+        acsbuild.partialdb = partialdb
+        acsbuild.main(year)
+
+
+
+
+#

@@ -87,8 +87,6 @@ def create_job(data,parents):
     job = Job()
     job.id = occ_code_to_int(data.OCC_CODE)
 
-    if partialdb.skip_job(job): return
-
     job.title = data.OCC_TITLE
     job.group = data.OCC_GROUP
 
@@ -97,10 +95,10 @@ def create_job(data,parents):
     if data.OCC_GROUP == 'broad': parent = parents['minor']
     if data.OCC_GROUP == 'detailed': parent = parents['broad']
 
-    if parent is None:
-        job.parent = None
-    else:
-        job.parent = Job.objects.get(id=occ_code_to_int(parent))
+    if parent is not None:
+        job.parent_id = occ_code_to_int(parent)
+
+    if partialdb.skip_job(job): return
 
     job.save()
 
@@ -124,6 +122,9 @@ def create_job_location(data):
     job_loc.pct_25 = clean_data(data.A_PCT25)
     job_loc.pct_75 = clean_data(data.A_PCT75)
     job_loc.pct_90 = clean_data(data.A_PCT90)
+
+    if partialdb.skip_job_location(job_loc):
+        return None
 
     return job_loc
 
@@ -156,6 +157,8 @@ def main(year,raw_data_path):
         if row.OCC_CODE != '00-0000':
             parents[row.OCC_GROUP] = row.OCC_CODE
             create_job(row,parents)
+
+    print(str(len(partialdb.skipped_jobs)) + ' jobs were skipped.')
 
     print('\n')
 

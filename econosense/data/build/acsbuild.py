@@ -2,6 +2,7 @@ import sys
 import os
 import requests
 from datetime import datetime
+from partialdb import PartialDatabase
 
 #Set up Django Environment
 import django
@@ -11,6 +12,7 @@ django.setup()
 
 from data.models import Rent,Area,State,Location
 
+partialdb = PartialDatabase()
 
 def main(year):
     Rent.objects.all().delete()
@@ -80,6 +82,9 @@ def main(year):
                     except: #create new Rent object
                         rent = Rent()
                         rent.location_id = loc_id
+
+                        if partialdb.skip_rent(rent):
+                            continue
 
                         #If building a partial database then we might not find the location
                         # try:
