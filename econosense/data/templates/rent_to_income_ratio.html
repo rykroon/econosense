@@ -4,7 +4,7 @@
 
 <div class='row m-5'>
   <div class='col-12'>
-    <h2 class='text-center'>Rent To Income Ratio</h1>
+    <h2 class='display-2 text-center'>Rent To Income Ratio</h2>
   </div>
 </div>
 
@@ -71,7 +71,7 @@
 
 <!-- good jobs -->
 <div class='row my-3'>
-  <div class='col-12'>
+  <div class='col-12 offset-md-1 col-md-10'>
 
     <div class='table-responsive'>
 
@@ -115,38 +115,6 @@
   </div>
 </div> <!-- /good jobs -->
 
-
-<!-- Shit Jobs -->
-<!-- <div class='row my-3'>
-  <div class='col-12'>
-    <div class='table-responsive'>
-      <table id='tbl_two' class='table table-hover border-left border-right'>
-        <caption style="caption-side: top;">{{table_two.title}}</caption>
-        <thead class='thead-light'>
-          <tr>
-            {% for col_name,class,tool_tip in table_two.header %}
-            <th class='{{class}}' data-toggle="tooltip" data-placement="top" title="{{tool_tip}}">{{ col_name }}</th>
-            {% endfor %}
-          </tr>
-        </thead>
-
-        <tbody>
-          {% for index,row in table_two.data.iterrows %}
-          <tr class='bg-danger-light'>
-            <td class="text-right">{{ row.0 }}</td>
-            <td class="text-left">{{ row.1 }}</td>
-            <td class="text-right">{{ row.2 }}</td>
-            <td class="text-right">{{ row.3 }}</td>
-            <td class="text-right">{{ row.4 }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-
-      </table>
-    </div>
-  </div>
-</div> -->
-
 {% endblock content %}
 
 {% block js %}
@@ -155,7 +123,6 @@
 
   if (location.search !== '') {
     location.hash = 'result-table';
-    //console.log(location.hash);
   }
 
   // Example starter JavaScript for disabling form submissions if there are invalid fields
