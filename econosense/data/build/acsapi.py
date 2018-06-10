@@ -24,9 +24,22 @@ class AcsApi():
         if year is None:
             year = self.year
 
-        self.base_url += str(year) + '/acs/acs1' 
+        url = self.base_url + str(year) + '/acs/acs1'
 
-        self.params['get'] = group + '_' + variable
-        self.params['for'] = geography + ':*'
+        if type(variable) == str:
 
-        response = requests.get(self.base_url,params=self.params)
+            self.params['get'] = group + '_' + variable
+            self.params['for'] = geography + ':*'
+
+            return requests.get(url,params=self.params)
+
+        elif type(variable) == dict:
+            result = dict()
+
+            for key,value in variable.items():
+                self.params['get'] = group + '_' + var
+                self.params['for'] = geography + ':*'
+
+                result[key] = requests.get(url,params=self.params)
+
+            return result

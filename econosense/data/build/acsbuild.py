@@ -3,6 +3,7 @@ import os
 import requests
 from datetime import datetime
 from partialdb import PartialDatabase
+from acsapi import AcsApi
 
 #Set up Django Environment
 import django
@@ -16,16 +17,8 @@ partialdb = PartialDatabase()
 
 def main(year):
     Rent.objects.all().delete()
-    base_url = 'https://api.census.gov/data/' + year + '/acs/acs1'
 
-    try:
-        CENSUS_API_KEY = os.environ['CENSUS_API_KEY']
-    except:
-        print('API key not found')
-        return
-
-    params = dict()
-    params['key'] = CENSUS_API_KEY
+    api = AcsApi(year=year)
 
     median_gross_rent = 'B25031' #group
 
@@ -55,9 +48,8 @@ def main(year):
 
         print('Building rent data by ' + geo_key)
         for var_key,var_value in variables.items(): #each bedroom
-            params['get'] = median_gross_rent + '_' + var_value
-            params['for'] = geo_value + ':*'
-            response = requests.get(base_url,params=params)
+
+            response = api.get(median_gross_rent,var_value,geo_value)
 
             if response.status_code == 200:
                 print('Requesting data from ' + response.url)
