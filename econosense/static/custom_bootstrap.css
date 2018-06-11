@@ -8923,33 +8923,16 @@ h6, .h6 {
 }
 
 .display-3 {
-  font-size: 2.25rem;
+  font-size: 1.875rem;
 }
 
 .display-4 {
-  font-size: 1.859375rem;
+  font-size: 1.59375rem;
 }
 
 @media (min-width: 576px) {
   .display-1 {
     font-size: 60px;
-  }
-
-  .display-2 {
-    font-size: 37.5px;
-  }
-
-  .display-3 {
-    font-size: 2.25rem;
-  }
-
-  .display-4 {
-    font-size: 1.859375rem;
-  }
-}
-@media (min-width: 768px) {
-  .display-1 {
-    font-size: 72px;
   }
 
   .display-2 {
@@ -8964,7 +8947,7 @@ h6, .h6 {
     font-size: 1.859375rem;
   }
 }
-@media (min-width: 992px) {
+@media (min-width: 768px) {
   .display-1 {
     font-size: 84px;
   }
@@ -8981,7 +8964,7 @@ h6, .h6 {
     font-size: 1.859375rem;
   }
 }
-@media (min-width: 1200px) {
+@media (min-width: 992px) {
   .display-1 {
     font-size: 96px;
   }

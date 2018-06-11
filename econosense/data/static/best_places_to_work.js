@@ -49,5 +49,5 @@ $(function () {
 
 //Initialize data table
 $(document).ready( function () {
-    $('#bptw_table').DataTable();
+    $('#result-table').DataTable();
 } );

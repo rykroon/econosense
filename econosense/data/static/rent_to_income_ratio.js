@@ -56,6 +56,6 @@ $(function () {
 
 // Data dataTables
 $(document).ready( function () {
-    $('#tbl_one').DataTable();
+    $('#result-table').DataTable();
     //$('#tbl_two').DataTable();
 } );
