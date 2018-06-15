@@ -8,19 +8,21 @@ from data.querysets import *
 # Create your models here.
 
 class Location(models.Model):
-    id          = models.BigIntegerField(primary_key=True)
+    #id          = models.BigIntegerField(primary_key=True)
+    geo_id      = models.IntegerField()
+    year        = models.IntegerField()
     name        = models.CharField(max_length=100)
     lsad_name   = models.CharField(max_length=100)
     lsad        = models.CharField(max_length=2) #Legal Statistical Area Description
     Longitude   = models.FloatField(null=True)
     Latitude    = models.FloatField(null=True)
-    #year        = models.IntegerField()
 
     objects = models.Manager()
     locations = LocationQuerySet.as_manager()
 
     class Meta:
         db_table = 'location'
+        unique_together = ('geo_id','year')
 
     def __str__(self):
         return self.lsad_name
@@ -79,8 +81,6 @@ class CombinedArea(Location):
 
 
 class Area(Location):
-    #long_name       = models.TextField()
-    #lsad            = models.CharField(max_length=2) #Legal Statistical Area Description
     parent          = models.ForeignKey("self",on_delete=models.CASCADE,null=True)
     combined_area   = models.ForeignKey("CombinedArea",on_delete=models.CASCADE,null=True)
 
@@ -98,6 +98,8 @@ class Area(Location):
 
 class Job(models.Model):
     id          = models.IntegerField(primary_key=True)
+    occ_code    = models.IntegerField()
+    year        = models.IntegerField()
     title       = models.TextField()
     group       = models.TextField()
     parent      = models.ForeignKey("self",on_delete=models.CASCADE,null=True)
@@ -107,6 +109,7 @@ class Job(models.Model):
 
     class Meta:
         db_table = 'job'
+        unique_together = ('occ_code','year')
 
     def __str__(self):
         return self.title
@@ -167,6 +170,7 @@ class JobLocationQuerySet(models.QuerySet):
 class JobLocation(models.Model):
     job         = models.ForeignKey('Job',on_delete=models.CASCADE,null=False)
     location    = models.ForeignKey('Location',on_delete=models.CASCADE,null=False)
+    year        = models.IntegerField()
     employed    = models.IntegerField()
     jobs_1000   = models.FloatField()
     average     = models.DecimalField(max_digits=8, decimal_places=2)
@@ -180,7 +184,7 @@ class JobLocation(models.Model):
     job_locations = JobLocationQuerySet.as_manager()
 
     class Meta:
-        unique_together = ('job','location')
+        unique_together = ('job','location','year')
         db_table = 'job_location'
 
     def __str__(self):
