@@ -78,20 +78,14 @@ def main(year):
                         if partialdb.skip_rent(rent):
                             continue
 
-                        #If building a partial database then we might not find the location
-                        # try:
-                        #     rent.location = Location.objects.get(id=loc_id)
-                        # except:
-                        #     continue
 
-
-                    if var_key == 'Total': rent.total = amount
-                    elif var_key == 'no_bedroom': rent.no_bedroom = amount
-                    elif var_key == 'one_bedroom': rent.one_bedroom = amount
-                    elif var_key == 'two_bedroom': rent.two_bedroom = amount
-                    elif var_key == 'three_bedroom': rent.three_bedroom = amount
-                    elif var_key == 'four_bedroom': rent.four_bedroom = amount
-                    elif var_key == 'five_plus_bedrooms': rent.five_bedroom = amount
+                    if var_key == 'Total':                  rent.total = amount
+                    elif var_key == 'no_bedroom':           rent.no_bedroom = amount
+                    elif var_key == 'one_bedroom':          rent.one_bedroom = amount
+                    elif var_key == 'two_bedroom':          rent.two_bedroom = amount
+                    elif var_key == 'three_bedroom':        rent.three_bedroom = amount
+                    elif var_key == 'four_bedroom':         rent.four_bedroom = amount
+                    elif var_key == 'five_plus_bedrooms':   rent.five_bedroom = amount
 
                     rents[loc_id] = rent #save object to the dict
 
