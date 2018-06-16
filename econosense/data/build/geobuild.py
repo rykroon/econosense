@@ -16,242 +16,266 @@ django.setup()
 
 from data.models import Location,Region,Division,State,CombinedArea,Area
 
-partialdb = PartialDatabase()
+#partialdb = PartialDatabase()
+#year = None
 
+class GeoBuild():
 
-def get_data(directory,year,raw_data_path):
-    base_url = 'https://www2.census.gov/geo/tiger/TIGER' + year
+    def __init__(self,year,raw_data_path):
+        self.year = year
+        self.raw_data_path = raw_data_path
+        self.base_url = 'https://www2.census.gov/geo/tiger/TIGER' + self.year
+        self.partialdb = PartialDatabase()
+        self.geographies = ['STATE','CSA','CNECTA','CBSA','NECTA','METDIV','NECTADIV']
 
-    #Create Working Directory if it doesn't exist.
-    if not os.path.isdir(os.path.join(raw_data_path,year)):
-        os.mkdir(os.path.join(raw_data_path,year))
-        print('Created directory ' + os.path.join(raw_data_path,year))
+        self.areas = None
+        self.combined_areas = None
 
-    if not os.path.isdir(os.path.join(raw_data_path,year,directory)):
-        os.mkdir(os.path.join(raw_data_path,year,directory))
-        print('Created directory ' + os.path.join(raw_data_path,year,directory))
+    def cache_area_ids(self):
+        self.areas = list(Area.objects.filter(year=self.year).values('id','geo_id'))
 
-    working_directory = os.path.join(raw_data_path,year,directory)
+    def get_area_id_by_geo_id(self,geo_id):
+        for area in self.areas:
+            if area['geo_id'] == geo_id:
+                return area['id']
 
-    file_name = 'tl_' + year + '_us_' + directory.lower() + '.csv'
+    def cache_combined_area_ids(self):
+        self.combined_areas = list(CombinedArea.objects.filter(year=self.year).values('id','geo_id'))
 
-    if os.path.exists(os.path.join(working_directory,file_name)):
-        print('Loading data from ' + os.path.join(working_directory,file_name))
-        return pd.read_csv(os.path.join(working_directory,file_name))
+    def get_combined_area_id_by_geo_id(self,geo_id):
+        for area in self.combined_areas:
+            if area['geo_id'] == geo_id:
 
-    file_name = file_name[:-4] + '.zip'
+                return area['id']
 
-    download_url = os.path.join(base_url, directory, file_name)
-    zip_file_path = os.path.join(working_directory,file_name)
 
-    #Download
-    print('Downloading data from ' + download_url)
-    response = requests.get(download_url)
-    with open(zip_file_path,'wb') as f:
-        f.write(response.content)
+    def get_data(self,directory):
+        base_url = 'https://www2.census.gov/geo/tiger/TIGER' + self.year
 
-    #Extract Zip File
-    zip_ref = zipfile.ZipFile(zip_file_path, 'r')
-    zip_ref.extractall(working_directory)
-    zip_ref.close()
+        #Create Working Directory if it doesn't exist.
+        if not os.path.isdir(os.path.join(self.raw_data_path,self.year)):
+            os.mkdir(os.path.join(self.raw_data_path,self.year))
+            print('Created directory ' + os.path.join(self.raw_data_path,self.year))
 
-    #Clean up
-    files_in_working_directory = os.listdir(working_directory)
 
-    for file in files_in_working_directory:
-        file_path = os.path.join(working_directory,file)
+        if not os.path.isdir(os.path.join(self.raw_data_path,self.year,directory)):
+            os.mkdir(os.path.join(self.raw_data_path,self.year,directory))
+            print('Created directory ' + os.path.join(self.raw_data_path,self.year,directory))
 
-        if file_path.endswith('.dbf'):
-            dbf = Dbf5(file_path)
-            df = dbf.to_dataframe()
-            df.to_csv(file_path[:-4] + '.csv',index=False)
 
-        os.remove(file_path)
+        working_directory = os.path.join(self.raw_data_path,self.year,directory)
 
-    return df
+        file_name = 'tl_' + self.year + '_us_' + directory.lower() + '.csv'
 
-def create_state(data):
-    state = State()
+        if os.path.exists(os.path.join(working_directory,file_name)):
+            print('Loading data from ' + os.path.join(working_directory,file_name))
+            return pd.read_csv(os.path.join(working_directory,file_name))
 
-    state.id            = data.GEOID
-    state.name          = data.NAME
-    state.lsad_name     = data.NAME
-    state.lsad          = 'ST'
-    state.latitude      = data.INTPTLAT
-    state.longitude     = data.INTPTLON
+        file_name = file_name[:-4] + '.zip'
 
-    state.initials      = data.STUSPS
-    #state.region    = Region.objects.get(id=int(data.REGION))
-    #state.division  = Division.objects.get(id=int(data.DIVISION))
-    state.region_id     = data.REGION
-    state.division_id   = data.DIVISION
+        download_url = os.path.join(base_url, directory, file_name)
+        zip_file_path = os.path.join(working_directory,file_name)
 
-    if partialdb.skip_state(state): return
+        #Download
+        print('Downloading data from ' + download_url)
+        response = requests.get(download_url)
+        with open(zip_file_path,'wb') as f:
+            f.write(response.content)
 
-    state.save()
+        #Extract Zip File
+        zip_ref = zipfile.ZipFile(zip_file_path, 'r')
+        zip_ref.extractall(working_directory)
+        zip_ref.close()
 
+        #Clean up
+        files_in_working_directory = os.listdir(working_directory)
 
-def create_combined_area(data):
-    csa = CombinedArea()
+        for file in files_in_working_directory:
+            file_path = os.path.join(working_directory,file)
 
-    csa.id          = data.GEOID
-    csa.name        = data.NAME
-    csa.lsad_name   = data.NAMELSAD
-    csa.lsad        = data.LSAD
-    csa.latitude    = data.INTPTLAT
-    csa.longitude   = data.INTPTLON
+            if file_path.endswith('.dbf'):
+                dbf = Dbf5(file_path)
+                df = dbf.to_dataframe()
+                csv_file = file_path[:-4] + '.csv'
+                df.to_csv(csv_file,index=False)
+                print('Exported file ' + csv_file)
 
-    csa.save()
+            os.remove(file_path)
+            print('Removed file ' + file_path)
 
+        return df
 
-def create_area(data):
-    area = Area()
 
-    try: area.id = data.METDIVFP        #id for Metropolitan Divisions
-    except:
-        try: area.id = data.NCTADVFP    #id for NECTA Divisions
-        except: area.id = data.GEOID    #id for other
+    def create_state(self,data):
+        state = State()
 
-    area.name       = data.NAME
-    area.lsad_name  = data.NAMELSAD
-    area.lsad       = data.LSAD
-    area.latitude   = data.INTPTLAT
-    area.longitude  = data.INTPTLON
+        state.geo_id        = data.GEOID
+        state.year          = self.year
+        state.name          = data.NAME
+        state.lsad_name     = data.NAME
+        state.lsad          = 'ST'
+        state.latitude      = data.INTPTLAT
+        state.longitude     = data.INTPTLON
 
-    area.parent         = None
-    area.combined_area  = None
+        state.initials      = data.STUSPS
+        state.region_id     = data.REGION
+        state.division_id   = data.DIVISION
 
-    try:
-        if data.CBSAFP != area.id:  area.parent_id = data.CBSAFP
-    except:
-        if data.NECTAFP != area.id: area.parent_id = data.NECTAFP
+        if self.partialdb.skip_state(state): return
 
+        state.save()
 
-    try:    area.combined_area_id = int(data.CSAFP)
-    except:
-        try:    area.combined_area_id = int(data.CNECTAFP)
-        except: pass
 
-    if partialdb.status():
-        if partialdb.skip_area(area):
-            return
-        else:
-            area.parent_id = None
+    def create_combined_area(self,data):
+        csa = CombinedArea()
 
-    area.save()
+        csa.geo_id      = data.GEOID
+        csa.year        = self.year
+        csa.name        = data.NAME
+        csa.lsad_name   = data.NAMELSAD
+        csa.lsad        = data.LSAD
+        csa.latitude    = data.INTPTLAT
+        csa.longitude   = data.INTPTLON
 
+        csa.save()
 
-def create_regions_and_divisons():
-    Region.objects.all().delete()
-    Division.objects.all().delete()
 
-    regions = list()
-    north_east = Region(id=1,name='Northeast')
-    #north_east.save()
-    regions.append(north_east)
+    def create_area(self,data):
+        area = Area()
 
-    mid_west = Region(id=2,name='Midwest')
-    #mid_west.save()
-    regions.append(mid_west)
+        try: area.geo_id = data.METDIVFP        #id for Metropolitan Divisions
+        except:
+            try: area.geo_id = data.NCTADVFP    #id for NECTA Divisions
+            except: area.geo_id = data.GEOID    #id for other
 
-    south = Region(id=3,name='South')
-    #south.save()
-    regions.append(south)
+        area.year       = self.year
+        area.name       = data.NAME
+        area.lsad_name  = data.NAMELSAD
+        area.lsad       = data.LSAD
+        area.latitude   = data.INTPTLAT
+        area.longitude  = data.INTPTLON
 
-    west = Region(id=4,name='West')
-    #west.save()
-    regions.append(west)
+        area.parent         = None
+        area.combined_area  = None
 
-    territory = Region(id=9,name='Territory')
-    #territory.save()
-    regions.append(territory)
+        try:
+            if data.CBSAFP != area.geo_id:
+                area.parent_id = self.get_area_id_by_geo_id(data.CBSAFP)
+        except:
+            if data.NECTAFP != area.geo_id:
+                 area.parent_id = self.get_area_id_by_geo_id(data.NECTAFP)
 
-    Region.objects.bulk_create(regions)
 
-    divisions = list()
-    territory_div = Division(id=0,name='Territory',region=territory)
-    #territory_div.save()
-    divisions.append(territory_div)
+        try:
+            area.combined_area_id = self.get_combined_area_id_by_geo_id(int(data.CSAFP))
+        except:
+            try:
+                 area.combined_area_id = self.get_combined_area_id_by_geo_id(int(data.CNECTAFP))
+            except: pass
 
-    new_england = Division(id=1,name='New England',region=north_east)
-    #new_england.save()
-    divisions.append(new_england)
+        if self.partialdb.status():
+            if self.partialdb.skip_area(area):
+                return
+            else:
+                area.parent_id = None
 
-    mid_atlantic = Division(id=2,name='Mid-Atlantic',region=north_east)
-    #mid_atlantic.save()
-    divisions.append(mid_atlantic)
+        area.save()
 
-    east_north_central = Division(id=3,name='East North Central',region=mid_west)
-    #east_north_central.save()
-    divisions.append(east_north_central)
 
-    west_north_central = Division(id=4,name='West North Central',region=mid_west)
-    #west_north_central.save()
-    divisions.append(west_north_central)
+    def create_regions_and_divisons(self):
+        Region.objects.all().delete()
+        Division.objects.all().delete()
 
-    south_atlantic = Division(id=5,name='South Atlantic',region=south)
-    #south_atlantic.save()
-    divisions.append(south_atlantic)
+        regions = list()
+        north_east = Region(id=1,name='Northeast')
+        regions.append(north_east)
 
-    east_south_central = Division(id=6,name='East South Central',region=south)
-    #east_south_central.save()
-    divisions.append(east_south_central)
+        mid_west = Region(id=2,name='Midwest')
+        regions.append(mid_west)
 
-    west_south_central = Division(id=7,name='West South Central',region=south)
-    #west_south_central.save()
-    divisions.append(west_south_central)
+        south = Region(id=3,name='South')
+        regions.append(south)
 
-    mountain = Division(id=8,name='Mountain',region=west)
-    #mountain.save()
-    divisions.append(mountain)
+        west = Region(id=4,name='West')
+        regions.append(west)
 
-    pacific = Division(id=9,name='Pacific',region=west)
-    #pacific.save()
-    divisions.append(pacific)
+        territory = Region(id=9,name='Territory')
+        regions.append(territory)
 
-    Division.objects.bulk_create(divisions)
+        Region.objects.bulk_create(regions)
 
+        divisions = list()
+        territory_div = Division(id=0,name='Territory',region=territory)
+        divisions.append(territory_div)
 
-def main(year,raw_data_path):
-    Location.objects.all().delete()
+        new_england = Division(id=1,name='New England',region=north_east)
+        divisions.append(new_england)
 
-    directories = ['STATE','CSA','CNECTA','CBSA','NECTA','METDIV','NECTADIV']
+        mid_atlantic = Division(id=2,name='Mid-Atlantic',region=north_east)
+        divisions.append(mid_atlantic)
 
-    data_frames = {}
-    print('Getting geo data')
-    for directory in directories:
-        data_frames[directory] = get_data(directory, year, raw_data_path)
+        east_north_central = Division(id=3,name='East North Central',region=mid_west)
+        divisions.append(east_north_central)
 
-    start = datetime.now()
+        west_north_central = Division(id=4,name='West North Central',region=mid_west)
+        divisions.append(west_north_central)
 
-    print('\n')
-    print('Building Regions and Divisions')
-    create_regions_and_divisons()
+        south_atlantic = Division(id=5,name='South Atlantic',region=south)
+        divisions.append(south_atlantic)
 
-    #for key,value in data_frames.items():
-    for key in directories:
-        print('Building data from geo directory ' + key)
+        east_south_central = Division(id=6,name='East South Central',region=south)
+        divisions.append(east_south_central)
 
-        value = data_frames[key]
-        print('Dataframe ' + key + ' has ' + str(len(value.index)) + ' rows of data')
-        for row in value.itertuples():
-            if key == 'STATE':
-                create_state(row)
+        west_south_central = Division(id=7,name='West South Central',region=south)
+        divisions.append(west_south_central)
 
-            elif key in ['CSA','CNECTA']:
-                create_combined_area(row)
+        mountain = Division(id=8,name='Mountain',region=west)
+        divisions.append(mountain)
 
-            elif key in ['CBSA','NECTA','METDIV','NECTADIV']:
-                create_area(row)
+        pacific = Division(id=9,name='Pacific',region=west)
+        divisions.append(pacific)
+
+        Division.objects.bulk_create(divisions)
+
+
+    def build(self):
+        Location.objects.filter(year=self.year).delete()
+
+        data_frames = {}
+        print('Getting geo data')
+        for geo in self.geographies:
+            data_frames[geo] = self.get_data(geo)
 
         print('\n')
+        print('Building Regions and Divisions')
+        self.create_regions_and_divisons()
 
-    end = datetime.now()
-    print(end-start)
-    print(str(len(partialdb.skipped_locations)) + ' locations have been skipped')
+        for geo in self.geographies:
+            print('Building data from geo directory ' + geo)
 
-            # if key == 'METDIV':         create_area_div(row)
-            # if key == 'NECTADIV':       create_necta_div(row)
+            geo_frame = data_frames[geo]
+            print('Dataframe ' + geo + ' has ' + str(len(geo_frame.index)) + ' rows of data')
+
+            if geo in ['CBSA','NECTA'] and self.combined_areas == None:
+                self.cache_combined_area_ids()
+
+            elif geo in ['METDIV','NECTADIV'] and self.areas == None:
+                self.cache_area_ids()
+
+
+            for row in geo_frame.itertuples():
+                if geo == 'STATE':
+                    self.create_state(row)
+
+                elif geo in ['CSA','CNECTA']:
+                    self.create_combined_area(row)
+
+                elif geo in ['CBSA','NECTA','METDIV','NECTADIV']:
+                    self.create_area(row)
+
+            print('\n')
+
+        print(str(len(self.partialdb.skipped_locations)) + ' locations have been skipped')
 
 
 

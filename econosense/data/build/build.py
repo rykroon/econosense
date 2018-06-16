@@ -41,7 +41,10 @@ for source in data_sources:
     if source in ['geo','oes'] and not os.path.isdir(path):
         os.mkdir(path)
 
-    if source == 'geo': geobuild.main(year,path)
+    if source == 'geo':
+        geo = geobuild.GeoBuild(year,path)
+        geo.build()
+        #geobuild.main(year,path)
     if source == 'oes': oesbuild.main(year,path)
     if source == 'acs': acsbuild.main(year)
 

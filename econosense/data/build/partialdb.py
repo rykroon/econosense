@@ -42,12 +42,12 @@ class PartialDatabase():
 
     def skip_job(self,job):
         if self.PARTIAL_DATABASE:
-            job_id = str(job.id)
+            job_id = str(job.occ_code)
 
             #do not add jobs where the third digit from the left is greater than one
-            if int(job_id[2]) > 1 or job.id >= 300000:
+            if int(job_id[2]) > 1 or job.occ_code >= 300000:
                 self.skip_count += 1
-                self.skipped_jobs.append(job.id)
+                self.skipped_jobs.append(job.occ_code)
                 return True
 
         return False
@@ -56,7 +56,7 @@ class PartialDatabase():
     def skip_state(self,state):
         if self.PARTIAL_DATABASE:
             if state.division.id not in [1,2,5]: #only keep east coast states
-                self.skipped_locations.append(state.id)
+                self.skipped_locations.append(state.geo_id)
                 return True
 
         return False
@@ -64,19 +64,13 @@ class PartialDatabase():
 
     def skip_area(self,area):
         if self.PARTIAL_DATABASE:
-            #do not include areas w/o a combined area
-            # if area.combined_area_id is None:
-            #     self.skipped_locations.append(area.id)
-            #     return True
-
             if area.parent_id is None:
-                self.skipped_locations.append(area.id)
+                self.skipped_locations.append(area.geo_id)
                 return True
-
 
             #do not include Micropolitan areas
             if area.lsad in ['M2','M6']:
-                self.skipped_locations.append(area.id)
+                self.skipped_locations.append(area.geo_id)
                 return True
 
         return False
@@ -94,8 +88,6 @@ class PartialDatabase():
 
     def skip_rent(self,rent):
         if self.PARTIAL_DATABASE:
-            # if rent.location_id in self.skipped_locations:
-            #     return True
             if rent.location_id not in self.locations:
                 return True
 
