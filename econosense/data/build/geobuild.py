@@ -4,8 +4,6 @@ import requests
 import zipfile
 from simpledbf import Dbf5
 import pandas as pd
-from data.build.partialdb import PartialDatabase
-
 from datetime import datetime
 
 #Set up Django Environment
@@ -15,21 +13,30 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "econosense.settings")
 django.setup()
 
 from data.models import Location,Region,Division,State,CombinedArea,Area
+from data.build.partialdb import PartialDatabase
+from data.build.build import Build
 
-#partialdb = PartialDatabase()
-#year = None
+class GeoBuild(Build):
 
-class GeoBuild():
+    def __init__(self,year):
+        super().__init__()
 
-    def __init__(self,year,raw_data_path):
+        self.source = 'geo'
+        self.download_path = os.path.join(self.download_path,self.source)
+        self.create_dir(self.download_path)
+
         self.year = year
-        self.raw_data_path = raw_data_path
+        self.download_path = os.path.join(self.download_path,self.year)
+        self.create_dir(self.download_path)
+
+
         self.base_url = 'https://www2.census.gov/geo/tiger/TIGER' + self.year
         self.partialdb = PartialDatabase()
         self.geographies = ['STATE','CSA','CNECTA','CBSA','NECTA','METDIV','NECTADIV']
 
         self.areas = None
         self.combined_areas = None
+
 
     def cache_area_ids(self):
         self.areas = list(Area.objects.filter(year=self.year).values('id','geo_id'))
@@ -49,43 +56,27 @@ class GeoBuild():
                 return area['id']
 
 
-    def get_data(self,directory):
-        base_url = 'https://www2.census.gov/geo/tiger/TIGER' + self.year
+    def get_data(self,geo_type):
 
-        #Create Working Directory if it doesn't exist.
-        if not os.path.isdir(os.path.join(self.raw_data_path,self.year)):
-            os.mkdir(os.path.join(self.raw_data_path,self.year))
-            print('Created directory ' + os.path.join(self.raw_data_path,self.year))
+        working_directory = os.path.join(self.download_path,geo_type)
 
+        if not os.path.isdir(working_directory):
+            self.create_dir(working_directory)
 
-        if not os.path.isdir(os.path.join(self.raw_data_path,self.year,directory)):
-            os.mkdir(os.path.join(self.raw_data_path,self.year,directory))
-            print('Created directory ' + os.path.join(self.raw_data_path,self.year,directory))
+        if os.path.isdir(working_directory):
+            file_path = os.path.join(working_directory,geo_type.lower() + '.csv')
 
+            if os.path.exists(file_path):
+                return self.load_file(file_path)
 
-        working_directory = os.path.join(self.raw_data_path,self.year,directory)
+        zip_file = file_name = 'tl_' + self.year + '_us_' + geo_type.lower() + '.zip'
 
-        file_name = 'tl_' + self.year + '_us_' + directory.lower() + '.csv'
+        download_url = os.path.join(self.base_url, geo_type, zip_file)
+        zip_file_path = os.path.join(working_directory,zip_file)
 
-        if os.path.exists(os.path.join(working_directory,file_name)):
-            print('Loading data from ' + os.path.join(working_directory,file_name))
-            return pd.read_csv(os.path.join(working_directory,file_name))
-
-        file_name = file_name[:-4] + '.zip'
-
-        download_url = os.path.join(base_url, directory, file_name)
-        zip_file_path = os.path.join(working_directory,file_name)
-
-        #Download
-        print('Downloading data from ' + download_url)
-        response = requests.get(download_url)
-        with open(zip_file_path,'wb') as f:
-            f.write(response.content)
-
-        #Extract Zip File
-        zip_ref = zipfile.ZipFile(zip_file_path, 'r')
-        zip_ref.extractall(working_directory)
-        zip_ref.close()
+        #Download and unzip
+        self.download(download_url,zip_file_path)
+        self.unzip(zip_file_path,working_directory)
 
         #Clean up
         files_in_working_directory = os.listdir(working_directory)
@@ -94,11 +85,11 @@ class GeoBuild():
             file_path = os.path.join(working_directory,file)
 
             if file_path.endswith('.dbf'):
-                dbf = Dbf5(file_path)
-                df = dbf.to_dataframe()
-                csv_file = file_path[:-4] + '.csv'
-                df.to_csv(csv_file,index=False)
-                print('Exported file ' + csv_file)
+                df = Dbf5(file_path).to_dataframe()
+                csv_file = geo_type.lower() + '.csv'
+                csv_file_path = os.path.join(working_directory,csv_file)
+                df.to_csv(csv_file_path,index=False)
+                print('Exported file ' + csv_file_path)
 
             os.remove(file_path)
             print('Removed file ' + file_path)
@@ -242,7 +233,6 @@ class GeoBuild():
         Location.objects.filter(year=self.year).delete()
 
         data_frames = {}
-        print('Getting geo data')
         for geo in self.geographies:
             data_frames[geo] = self.get_data(geo)
 
@@ -255,6 +245,7 @@ class GeoBuild():
 
             geo_frame = data_frames[geo]
             print('Dataframe ' + geo + ' has ' + str(len(geo_frame.index)) + ' rows of data')
+
 
             if geo in ['CBSA','NECTA'] and self.combined_areas == None:
                 self.cache_combined_area_ids()
