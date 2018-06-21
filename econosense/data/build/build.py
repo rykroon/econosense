@@ -5,15 +5,13 @@ import requests
 import zipfile
 import pandas as pd
 
-import acsbuild
-import oesbuild
-import geobuild
 from partialdb import PartialDatabase
 
 class Build(object):
 
     def __init__(self):
         self.download_path = 'data/build/downloads'
+        self.partialdb = PartialDatabase()
 
         if not os.path.isdir(self.download_path):
             self.create_dir(self.download_path)
@@ -50,8 +48,15 @@ class Build(object):
         if file.endswith('.csv'):
             return pd.read_csv(file)
 
+        elif file.endswith('.xlsx'):
+            return pd.read_excel(file)
+
 
 if __name__ == '__main__':
+
+    import acsbuild
+    import oesbuild
+    import geobuild
 
     try:
         year = sys.argv[1]
@@ -77,22 +82,16 @@ if __name__ == '__main__':
 
     for source in data_sources:
 
-        # try:
-        #     os.mkdir(raw_data_path)
-        #     print('Created directory ' + raw_data_path)
-        # except: pass
-
-        #path = os.path.join(raw_data_path,source)
-
-        # if source in ['geo','oes'] and not os.path.isdir(path):
-        #     os.mkdir(path)
-
         if source == 'geo':
             geo = geobuild.GeoBuild(year)
             geo.build()
-            
-        if source == 'oes': oesbuild.main(year,path)
-        if source == 'acs': acsbuild.main(year)
+
+        if source == 'oes':
+            oes = oesbuild.OesBuild(year)
+            oes.build()
+            #oesbuild.main(year,path)
+        if source == 'acs':
+            acsbuild.main(year)
 
 
 

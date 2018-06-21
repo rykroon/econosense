@@ -97,8 +97,8 @@ class Area(Location):
 
 
 class Job(models.Model):
-    id          = models.IntegerField(primary_key=True)
-    occ_code    = models.IntegerField()
+    #id          = models.IntegerField(primary_key=True)
+    code    = models.IntegerField()
     year        = models.IntegerField()
     title       = models.TextField()
     group       = models.TextField()
@@ -109,7 +109,7 @@ class Job(models.Model):
 
     class Meta:
         db_table = 'job'
-        unique_together = ('occ_code','year')
+        unique_together = ('code','year')
 
     def __str__(self):
         return self.title

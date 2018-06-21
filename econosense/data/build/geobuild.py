@@ -13,7 +13,6 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "econosense.settings")
 django.setup()
 
 from data.models import Location,Region,Division,State,CombinedArea,Area
-from data.build.partialdb import PartialDatabase
 from data.build.build import Build
 
 class GeoBuild(Build):
@@ -29,9 +28,7 @@ class GeoBuild(Build):
         self.download_path = os.path.join(self.download_path,self.year)
         self.create_dir(self.download_path)
 
-
         self.base_url = 'https://www2.census.gov/geo/tiger/TIGER' + self.year
-        self.partialdb = PartialDatabase()
         self.geographies = ['STATE','CSA','CNECTA','CBSA','NECTA','METDIV','NECTADIV']
 
         self.areas = None

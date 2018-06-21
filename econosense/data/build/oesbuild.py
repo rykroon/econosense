@@ -1,10 +1,10 @@
 import os
 import sys
-#import urllib.request
+
 import requests
 import zipfile
 import pandas as pd
-from data.build.partialdb import PartialDatabase
+
 from datetime import datetime
 
 
@@ -17,187 +17,216 @@ django.setup()
 from django.db.models import Max
 from data.models import Job,JobLocation,Area,State,Location
 
-
-partialdb = PartialDatabase()
-
-def get_data(table,year,raw_data_path):
-    base_url = 'https://www.bls.gov/oes/special.requests'
-
-    #Create Working Directory if it doesn't exist.
-    if not os.path.isdir(os.path.join(raw_data_path,year)):
-        os.mkdir(os.path.join(raw_data_path,year))
-
-    working_directory = os.path.join(raw_data_path,year)
-
-    file_name = 'oesm' + year[-2:]
-
-    if table == 'National': file_name += 'nat'
-    if table == 'State': file_name += 'st'
-    if table == 'Metropolitan': file_name += 'ma'
-
-    #Download and Unzip file if doesnt already exist
-    if not os.path.isdir(os.path.join(working_directory,file_name)):
-
-        file_name += '.zip'
-
-        download_url = os.path.join(base_url,file_name)
-        zip_file_path = os.path.join(working_directory,file_name)
-
-        print('Downloading data from ' + download_url)
-
-        #Download
-        response = requests.get(download_url)
-        with open(zip_file_path,'wb') as f:
-            f.write(response.content)
-
-        #Extract Zip File
-        zip_ref = zipfile.ZipFile(zip_file_path, 'r')
-        zip_ref.extractall(working_directory)
-        zip_ref.close()
-
-        os.remove(zip_file_path)
-        file_name = file_name[:-4]
-
-    working_directory = os.path.join(working_directory,file_name)
-
-    files_in_working_directory = os.listdir(working_directory)
-
-    data_frames = {}
-
-    for file in files_in_working_directory:
-        file_path = os.path.join(working_directory,file)
-
-        if file_path.endswith('_dl.xlsx'):
-            frame_name = file[:file.index('_')]
-            df = pd.read_excel(file_path)
-            data_frames[frame_name] = df
-            df.to_csv(os.path.join(working_directory,frame_name + '.csv'),index=False)
-            os.remove(file_path)
-
-        elif file_path.endswith('.csv'):
-            print('Loading data from ' + working_directory)
-            frame_name = file[:file.index('.')]
-            df = pd.read_csv(file_path)
-            data_frames[frame_name] = df
-
-    return data_frames
+from data.build.build import Build
 
 
-def create_job(data,parents):
-    job = Job()
-    job.id = occ_code_to_int(data.OCC_CODE)
+class OesBuild(Build):
 
-    job.title = data.OCC_TITLE
-    job.group = data.OCC_GROUP
+    def __init__(self,year):
+        super().__init__()
 
-    parent = None
-    if data.OCC_GROUP == 'minor': parent = parents['major']
-    if data.OCC_GROUP == 'broad': parent = parents['minor']
-    if data.OCC_GROUP == 'detailed': parent = parents['broad']
+        self.source = 'oes'
+        self.download_path = os.path.join(self.download_path,self.source)
+        self.create_dir(self.download_path)
 
-    if parent is not None:
-        job.parent_id = occ_code_to_int(parent)
+        self.year = year
+        self.download_path = os.path.join(self.download_path,self.year)
+        self.create_dir(self.download_path)
 
-    if partialdb.skip_job(job): return
+        self.base_url = 'https://www.bls.gov/oes/special.requests'
 
-    job.save()
+        self.jobs = None
+        self.areas = None
+        self.locations = None
 
+    def get_data(self,table):
 
-def occ_code_to_int(occ_code):
-    return int(occ_code[:2] + occ_code[3:])
+        working_directory = self.download_path
 
+        file_name = 'oesm' + self.year[-2:]
 
+        if table == 'National':     file_name += 'nat'
+        if table == 'State':        file_name += 'st'
+        if table == 'Metropolitan': file_name += 'ma'
 
-def create_job_location(data):
-    job_loc = JobLocation()
+        #If directory does not exist then download
+        if not os.path.isdir(os.path.join(working_directory,file_name)):
 
-    job_loc.job_id = occ_code_to_int(data.OCC_CODE)
-    job_loc.location_id = data.AREA
+            zip_file = file_name + '.zip'
 
-    job_loc.employed = clean_data(data.TOT_EMP)
-    job_loc.jobs_1000 = clean_data(data.JOBS_1000)
-    job_loc.average = clean_data(data.A_MEAN)
-    job_loc.median = clean_data(data.A_MEDIAN)
-    job_loc.pct_10 = clean_data(data.A_PCT10)
-    job_loc.pct_25 = clean_data(data.A_PCT25)
-    job_loc.pct_75 = clean_data(data.A_PCT75)
-    job_loc.pct_90 = clean_data(data.A_PCT90)
+            download_url = os.path.join(self.base_url,zip_file)
+            zip_file_path = os.path.join(working_directory,zip_file)
 
-    if partialdb.skip_job_location(job_loc):
-        return None
+            self.download(download_url,zip_file_path)
+            self.unzip(zip_file_path,working_directory)
+            os.remove(zip_file_path)
 
-    return job_loc
+        working_directory = os.path.join(working_directory,file_name)
 
+        files_in_working_directory = os.listdir(working_directory)
 
+        data_frames = {}
 
-def clean_data(data):
-    if data in ['*','**']: return -1
-    elif data == '#': return 999999.99
-    else: return data
+        for file in files_in_working_directory:
+            file_path = os.path.join(working_directory,file)
 
 
-def main(year,raw_data_path):
-    Job.objects.all().delete()
-    JobLocation.objects.all().delete()
+            if file_path.endswith('_dl.xlsx'):
+                df = self.load_file(file_path)
+                frame_name = file[:file.index('_')]
+                data_frames[frame_name] = df
 
-    tables = ['National','State','Metropolitan']
+                export_path = os.path.join(working_directory,frame_name + '.csv')
+                df.to_csv(export_path,index=False)
+                os.remove(file_path)
 
-    data = {}
+            elif file_path.endswith('.csv'):
+                frame_name = file[:-4]
+                df = self.load_file(file_path)
+                data_frames[frame_name] = df
 
-    print('Getting OES data')
-    for table in tables:
-        data[table] = get_data(table, year, raw_data_path)
+        return data_frames
 
 
-    print('\n')
-    print('Building jobs')
-    parents = {}
+    def cache_locations(self):
+        self.locations = list(
+            Location.objects.filter(
+            year=self.year).filter(
+            lsad__in=['ST','M1','M3','M5','M7']
+            ).values('id','geo_id'))
 
-    for row in data['National']['national'].itertuples():
-        if row.OCC_CODE != '00-0000':
-            parents[row.OCC_GROUP] = row.OCC_CODE
-            create_job(row,parents)
+    def get_location_id_by_geo_id(self,geo_id):
+        for loc in self.locations:
+            if loc['geo_id'] == geo_id:
+                return loc['id']
 
-    print(str(len(partialdb.skipped_jobs)) + ' jobs were skipped.')
 
-    print('\n')
+    def cache_jobs(self):
+        self.jobs = list(Job.objects.filter(year=self.year).values('id','code'))
 
-    def df_to_db(df):
+    def get_job_id_by_occ_code(self,occ_code):
+        for job in self.jobs:
+            if job['code'] == occ_code:
+                return job['id']
 
-        job_loc_list = list()
 
-        max = JobLocation.objects.all().aggregate(Max('id'))
-        max = max['id__max']
+    def create_job(self,data,parents):
+        job = Job()
+        job.code = self.occ_code_to_int(data.OCC_CODE)
+        job.year = self.year
 
-        if max is None: pk = 0
-        else: pk = max
+        job.title = data.OCC_TITLE
+        job.group = data.OCC_GROUP
 
-        for row in df.itertuples():
+        if job.group == 'minor':       job.parent_id = parents['major']
+        if job.group == 'broad':       job.parent_id = parents['minor']
+        if job.group == 'detailed':    job.parent_id = parents['broad']
+
+        if self.partialdb.skip_job(job): return
+
+        job.save()
+        return job
+
+
+    def occ_code_to_int(self,occ_code):
+        return int(occ_code[:2] + occ_code[3:])
+
+
+    def create_job_location(self,data):
+        job_loc = JobLocation()
+
+        job_loc.year        = self.year
+        #job_loc.job_id      = self.occ_code_to_int(data.OCC_CODE)
+        occ_code            = self.occ_code_to_int(data.OCC_CODE)
+        job_loc.job_id      = self.get_job_id_by_occ_code(occ_code)
+        job_loc.location_id = self.get_location_id_by_geo_id(data.AREA)
+
+        job_loc.employed    = self.clean_data(data.TOT_EMP)
+        job_loc.jobs_1000   = self.clean_data(data.JOBS_1000)
+        job_loc.average     = self.clean_data(data.A_MEAN)
+        job_loc.median      = self.clean_data(data.A_MEDIAN)
+        job_loc.pct_10      = self.clean_data(data.A_PCT10)
+        job_loc.pct_25      = self.clean_data(data.A_PCT25)
+        job_loc.pct_75      = self.clean_data(data.A_PCT75)
+        job_loc.pct_90      = self.clean_data(data.A_PCT90)
+
+        if self.partialdb.skip_job_location(job_loc):
+            return None
+
+        return job_loc
+
+
+
+    def clean_data(self,data):
+        if data in ['*','**']: return -1
+        elif data == '#': return 999999.99
+        else: return data
+
+
+    def build(self):
+        Job.objects.filter(year=self.year).delete()
+        JobLocation.objects.filter(year=self.year).delete()
+
+        tables = ['National','State','Metropolitan']
+
+        data = {}
+
+        for table in tables:
+            data[table] = self.get_data(table)
+
+
+        print('\n')
+        print('Building jobs')
+        parents = {}
+
+        for row in data['National']['national'].itertuples():
             if row.OCC_CODE != '00-0000':
+                job = self.create_job(row,parents)
+                parents[job.group] = job.id
 
-                job_location = create_job_location(row)
+        print(str(len(self.partialdb.skipped_jobs)) + ' jobs were skipped.')
 
-                if job_location is not None:
-                    pk += 1
-                    job_location.id = pk
-                    job_loc_list.append(job_location)
+        print('\n')
+
+        self.cache_jobs()
+        self.cache_locations()
+
+        def df_to_db(df):
+
+            job_loc_list = list()
+
+            max = JobLocation.objects.all().aggregate(Max('id'))
+            max = max['id__max']
+
+            if max is None: pk = 0
+            else: pk = max
+
+            for row in df.itertuples():
+                if row.OCC_CODE != '00-0000':
+
+                    job_location = self.create_job_location(row)
+
+                    if job_location is not None:
+                        pk += 1
+                        job_location.id = pk
+                        job_loc_list.append(job_location)
 
 
-                batch_size = 20000
-                if len(job_loc_list) >= batch_size:
-                    print("Inserting batch of " + str(batch_size) + " records")
-                    JobLocation.objects.bulk_create(job_loc_list)
-                    job_loc_list.clear()
+                    batch_size = 20000
+                    if len(job_loc_list) >= batch_size:
+                        print("Inserting batch of " + str(batch_size) + " records")
+                        JobLocation.objects.bulk_create(job_loc_list)
+                        job_loc_list.clear()
 
-        print("Inserting batch of " + str(len(job_loc_list)) + " records")
-        JobLocation.objects.bulk_create(job_loc_list)
+            print("Inserting batch of " + str(len(job_loc_list)) + " records")
+            JobLocation.objects.bulk_create(job_loc_list)
 
 
-    print('Building job locations by state')
-    df_to_db(data['State']['state'])
+        print('Building job locations by state')
+        df_to_db(data['State']['state'])
 
-    print('Building job locations by Metropolitan Area')
-    df_to_db(data['Metropolitan']['MSA'])
+        print('Building job locations by Metropolitan Area')
+        df_to_db(data['Metropolitan']['MSA'])
 
-    print('Building job locations by Metropolitan Area 2')
-    df_to_db(data['Metropolitan']['aMSA'])
+        print('Building job locations by Metropolitan Area 2')
+        df_to_db(data['Metropolitan']['aMSA'])
