@@ -1,9 +1,9 @@
 import os
 import sys
 
-import requests
-import zipfile
-import pandas as pd
+#import requests
+#import zipfile
+#import pandas as pd
 
 from datetime import datetime
 
@@ -23,21 +23,20 @@ from data.build.build import Build
 class OesBuild(Build):
 
     def __init__(self,year):
-        super().__init__()
+        super().__init__(year)
 
         self.source = 'oes'
         self.download_path = os.path.join(self.download_path,self.source)
         self.create_dir(self.download_path)
 
-        self.year = year
         self.download_path = os.path.join(self.download_path,self.year)
         self.create_dir(self.download_path)
 
         self.base_url = 'https://www.bls.gov/oes/special.requests'
 
         self.jobs = None
-        self.areas = None
         self.locations = None
+        self.last_location = {'id':None,'geo_id':None}
 
     def get_data(self,table):
 
@@ -88,6 +87,7 @@ class OesBuild(Build):
         return data_frames
 
 
+    #only include states, Metro Areas, Metro Divisions, NECTA Areas and NECTA Divisions
     def cache_locations(self):
         self.locations = list(
             Location.objects.filter(
@@ -96,8 +96,12 @@ class OesBuild(Build):
             ).values('id','geo_id'))
 
     def get_location_id_by_geo_id(self,geo_id):
+        if self.last_location['geo_id'] == geo_id:
+            return self.last_location['id']
+
         for loc in self.locations:
             if loc['geo_id'] == geo_id:
+                self.last_location = loc
                 return loc['id']
 
 
@@ -136,7 +140,6 @@ class OesBuild(Build):
         job_loc = JobLocation()
 
         job_loc.year        = self.year
-        #job_loc.job_id      = self.occ_code_to_int(data.OCC_CODE)
         occ_code            = self.occ_code_to_int(data.OCC_CODE)
         job_loc.job_id      = self.get_job_id_by_occ_code(occ_code)
         job_loc.location_id = self.get_location_id_by_geo_id(data.AREA)
@@ -169,7 +172,7 @@ class OesBuild(Build):
 
         tables = ['National','State','Metropolitan']
 
-        data = {}
+        data = dict()
 
         for table in tables:
             data[table] = self.get_data(table)
@@ -177,7 +180,7 @@ class OesBuild(Build):
 
         print('\n')
         print('Building jobs')
-        parents = {}
+        parents = dict()
 
         for row in data['National']['national'].itertuples():
             if row.OCC_CODE != '00-0000':
@@ -191,15 +194,15 @@ class OesBuild(Build):
         self.cache_jobs()
         self.cache_locations()
 
-        def df_to_db(df):
+        def df_to_db(df,batch_size):
 
             job_loc_list = list()
 
-            max = JobLocation.objects.all().aggregate(Max('id'))
-            max = max['id__max']
+            #max = JobLocation.objects.all().aggregate(Max('id'))
+            #max = max['id__max']
 
-            if max is None: pk = 0
-            else: pk = max
+            #if max is None: pk = 0
+            #else: pk = max
 
             for row in df.itertuples():
                 if row.OCC_CODE != '00-0000':
@@ -207,12 +210,12 @@ class OesBuild(Build):
                     job_location = self.create_job_location(row)
 
                     if job_location is not None:
-                        pk += 1
-                        job_location.id = pk
+                        #pk += 1
+                        #job_location.id = pk
                         job_loc_list.append(job_location)
 
 
-                    batch_size = 20000
+                    #batch_size = 20000
                     if len(job_loc_list) >= batch_size:
                         print("Inserting batch of " + str(batch_size) + " records")
                         JobLocation.objects.bulk_create(job_loc_list)
@@ -222,11 +225,18 @@ class OesBuild(Build):
             JobLocation.objects.bulk_create(job_loc_list)
 
 
-        print('Building job locations by state')
-        df_to_db(data['State']['state'])
 
-        print('Building job locations by Metropolitan Area')
-        df_to_db(data['Metropolitan']['MSA'])
+        def create_job_states():
+            print('Building job locations by state')
+            df_to_db(data['State']['state'],15000)
 
-        print('Building job locations by Metropolitan Area 2')
-        df_to_db(data['Metropolitan']['aMSA'])
+        self.time_it(create_job_states)
+
+        def create_job_metros():
+            print('Building job locations by Metropolitan Area')
+            df_to_db(data['Metropolitan']['MSA'],25000)
+
+            #print('Building job locations by Metropolitan Area 2')
+            df_to_db(data['Metropolitan']['aMSA'],10000)
+
+        self.time_it(create_job_metros)

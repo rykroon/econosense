@@ -15,13 +15,9 @@ from django_pandas.io import read_frame
 
 # Create your views here.
 class BestPlacesToWorkView(FormView):
-    material_design = False
 
     http_method_names = ['get']
-
-    if material_design: template_name = 'best_places_to_work_mdl.html'
-    else: template_name = 'best_places_to_work.html'
-
+    template_name = 'best_places_to_work.html'
     success_url = '/best-places-to-work/'
 
 
@@ -32,7 +28,6 @@ class BestPlacesToWorkView(FormView):
         audit.save()
 
         form = BestPlacesToWorkForm(request.GET or None)
-        if self.material_design: form.material_design()
         context = dict()
         context['form'] = form
 

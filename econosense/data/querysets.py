@@ -1,3 +1,4 @@
+import os
 from django.db import models
 from django.db.models import Q
 
@@ -6,8 +7,14 @@ from data.models import *
 #Can be used for any model that may be considered a "Location"
 #Ex: State, County, City,Town, Area
 class LocationQuerySet(models.QuerySet):
+
+    def year(self):
+        try:    year = os.environ['YEAR']
+        except: year = None
+        return self.filter(year=year)
+
     def states(self):
-        return self.filter(lsad='ST')
+        return self.year().filter(lsad='ST')
 
 
 
@@ -28,56 +35,89 @@ class LocationQuerySet(models.QuerySet):
 
 
 class StateQuerySet(models.QuerySet):
-    def territories(self):      return self.filter(region_id=9)
-    def states(self):           return self.filter(region_id__in=[1,2,3,4])
-    def states_and_pr(self):    return self.filter(Q(id=72) | Q(region_id__in=[1,2,3,4]))
-    def north_east(self):       return self.filter(region_id=1)
-    def mid_west(self):         return self.filter(region_id=2)
-    def south(self):            return self.filter(region_id=3)
-    def west(self):             return self.filter(region_id=4)
+
+    def year(self):
+        try:    year = os.environ['YEAR']
+        except: year = None
+        return self.filter(year=year)
+
+    def territories(self):
+        return self.year().filter(region__geo_id=9)
+
+    def states(self):
+        return self.year().filter(region__geo_id__in=[1,2,3,4])
+
+    def states_and_pr(self):
+        return self.year().filter(Q(geo_id=72) | Q(region__geo_id__in=[1,2,3,4]))
+
+    def north_east(self):
+        return self.year().filter(region__geo_id=1)
+
+    def mid_west(self):
+        return self.year().filter(region__geo_id=2)
+
+    def south(self):
+        return self.year().filter(region__geo_id=3)
+
+    def west(self):
+        return self.year().filter(region__geo_id=4)
 
 
 
 class AreaQuerySet(models.QuerySet):
+
+    def year(self):
+        try:    year = os.environ['YEAR']
+        except: year = None
+        return self.filter(year=year)
+
     def default(self):
-        return self.ex_new_england_areas().ex_parents().ex_micros()
+        return self.year().ex_new_england_areas().ex_parents().ex_micros()
         #return self.exclude_divisions()
 
     def ex_parents(self):
-        parents =  self.filter(parent__isnull=False).values('parent').distinct()
-        return self.exclude(id__in=parents)
+        parents =  self.year().filter(parent__isnull=False).values('parent').distinct()
+        return self.year().exclude(id__in=parents)
 
     #All New England Areas should exclusively be NECTA's (New England City and Town Areas)
     #Exclude New England Areas that are NOT NECTA's
     def ex_new_england_areas(self):
-        ne_areas = self.filter(
+        ne_areas = self.year().filter(
             Q(name__contains='CT') | Q(name__contains='MA') |
             Q(name__contains='ME') | Q(name__contains='NH') |
             Q(name__contains='RI') | Q(name__contains='VT')
         ).filter(lsad__in=['M1','M2','M3'])
-        return self.exclude(id__in=ne_areas)
+        return self.year().exclude(id__in=ne_areas)
 
 
-    def ex_micros(self):        return self.exclude(lsad__in=['M2','M6'])
+    def ex_micros(self):        return self.year().exclude(lsad__in=['M2','M6'])
 
-    def ex_divisions(self):     return self.exclude(lsad__in=['M3','M7'])
-    def divisions(self):        return self.filter(lsad__in=['M3','M7'])
+    def ex_divisions(self):     return self.year().exclude(lsad__in=['M3','M7'])
+    def divisions(self):        return self.year().filter(lsad__in=['M3','M7'])
 
-    def metro_areas(self):      return self.filter(lsad='M1')
-    def micro_areas(self):      return self.filter(lsad='M2')
-    def metro_divisions(self):  return self.filter(lsad='M3')
+    def metro_areas(self):      return self.year().filter(lsad='M1')
+    def micro_areas(self):      return self.year().filter(lsad='M2')
+    def metro_divisions(self):  return self.year().filter(lsad='M3')
 
-    def metro_nectas(self):     return self.filter(lsad='M5')
-    def micro_nectas(self):     return self.filter(lsad='M6')
-    def necta_divisions(self):  return self.filter(lsad='M7')
+    def metro_nectas(self):     return self.year().filter(lsad='M5')
+    def micro_nectas(self):     return self.year().filter(lsad='M6')
+    def necta_divisions(self):  return self.year().filter(lsad='M7')
 
 
 
 class JobQueryset(models.QuerySet):
-    def major_jobs(self): return self.filter(group='major')
-    def minor_jobs(self): return self.filter(group='minor')
-    def broad_jobs(self): return self.filter(group='broad')
-    def detailed_jobs(self): return self.filter(group='detailed')
+    # def __init__(self):
+    #     super().__init()
+    #     self = self.filter(year=2016)
+    def year(self):
+        try:    year = os.environ['YEAR']
+        except: year = None
+        return self.filter(year=year)
+
+    def major_jobs(self):       return self.year().filter(group='major')
+    def minor_jobs(self):       return self.year().filter(group='minor')
+    def broad_jobs(self):       return self.year().filter(group='broad')
+    def detailed_jobs(self):    return self.year().filter(group='detailed')
 
 
 
@@ -134,9 +174,15 @@ class JobQueryset(models.QuerySet):
 
 
 class RentQuerySet(models.QuerySet):
+
+    def year(self):
+        try:    year = os.environ['YEAR']
+        except: year = None
+        return self.filter(year=year)
+
     def apartment(self,apartment_type):
         if apartment_type == 'total':   return self.total()
-        elif apartment_type == 'no':   return self.no_bedroom()
+        elif apartment_type == 'no':    return self.no_bedroom()
         elif apartment_type == 'one':   return self.one_bedroom()
         elif apartment_type == 'two':   return self.two_bedroom()
         elif apartment_type == 'three': return self.three_bedroom()

@@ -29,23 +29,29 @@ class Location(models.Model):
 
 #!! potentially change Region and Division so that they inherit from Location
 class Region(models.Model):
-    id      = models.IntegerField(primary_key=True)
+    #id      = models.IntegerField(primary_key=True)
+    geo_id  = models.IntegerField()
     name    = models.TextField()
+    year    = models.IntegerField()
 
     class Meta:
         db_table = 'region'
+        unique_together = ('geo_id','year')
 
     def __str__(self):
         return self.name
 
 
 class Division(models.Model):
-    id      = models.IntegerField(primary_key=True)
+    #id      = models.IntegerField(primary_key=True)
+    geo_id  = models.IntegerField()
     name    = models.TextField()
+    year    = models.IntegerField()
     region  = models.ForeignKey('Region',on_delete=models.CASCADE,null=False)
 
     class Meta:
         db_table = 'division'
+        unique_together = ('geo_id','year')
 
     def __str__(self):
         return self.name
@@ -97,7 +103,6 @@ class Area(Location):
 
 
 class Job(models.Model):
-    #id          = models.IntegerField(primary_key=True)
     code    = models.IntegerField()
     year        = models.IntegerField()
     title       = models.TextField()
@@ -116,6 +121,7 @@ class Job(models.Model):
 
 
 class JobLocationQuerySet(models.QuerySet):
+
     #add function that filters out bad median and jobs_1000
     def has_rent(self,rent_type):
         if rent_type == 'total':    return self.has_total_rent()
@@ -193,6 +199,7 @@ class JobLocation(models.Model):
 
 class Rent(models.Model):
     location        = models.OneToOneField('Location',on_delete=models.CASCADE)
+    year            = models.IntegerField()
     total           = models.IntegerField(null=True)
     no_bedroom      = models.IntegerField(null=True)
     one_bedroom     = models.IntegerField(null=True)
@@ -206,6 +213,7 @@ class Rent(models.Model):
 
     class Meta:
         db_table = 'rent'
+        unique_together = ('location','year')
 
     def __str__(self):
         return self.location.lsad_name + ' Rent'

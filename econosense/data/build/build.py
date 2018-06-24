@@ -4,17 +4,27 @@ import os
 import requests
 import zipfile
 import pandas as pd
+from datetime import datetime
 
 from partialdb import PartialDatabase
 
 class Build(object):
 
-    def __init__(self):
+    def __init__(self,year):
+        self.year = year
         self.download_path = 'data/build/downloads'
         self.partialdb = PartialDatabase()
 
         if not os.path.isdir(self.download_path):
             self.create_dir(self.download_path)
+
+    def time_it(self,some_function):
+        start = datetime.now()
+        some_function()
+        end = datetime.now()
+
+        print(end-start)
+
 
     def create_dir(self,directory):
         try:
@@ -52,11 +62,13 @@ class Build(object):
             return pd.read_excel(file)
 
 
+
+
 if __name__ == '__main__':
 
-    import acsbuild
-    import oesbuild
-    import geobuild
+    from acsbuild import AcsBuild
+    from oesbuild import OesBuild
+    from geobuild import GeoBuild
 
     try:
         year = sys.argv[1]
@@ -83,15 +95,17 @@ if __name__ == '__main__':
     for source in data_sources:
 
         if source == 'geo':
-            geo = geobuild.GeoBuild(year)
+            geo = GeoBuild(year)
             geo.build()
 
         if source == 'oes':
-            oes = oesbuild.OesBuild(year)
+            oes = OesBuild(year)
             oes.build()
-            #oesbuild.main(year,path)
+
         if source == 'acs':
-            acsbuild.main(year)
+            acs = AcsBuild(year)
+            acs.build()
+
 
 
 

@@ -18,13 +18,12 @@ from data.build.build import Build
 class GeoBuild(Build):
 
     def __init__(self,year):
-        super().__init__()
+        super().__init__(year)
 
         self.source = 'geo'
         self.download_path = os.path.join(self.download_path,self.source)
         self.create_dir(self.download_path)
 
-        self.year = year
         self.download_path = os.path.join(self.download_path,self.year)
         self.create_dir(self.download_path)
 
@@ -51,6 +50,22 @@ class GeoBuild(Build):
             if area['geo_id'] == geo_id:
 
                 return area['id']
+
+    def cache_divisions(self):
+        self.divisions = list(Division.objects.filter(year=self.year).values('id','geo_id'))
+
+    def get_division_id_by_geo_id(self,geo_id):
+        for div in self.divisions:
+            if div['geo_id'] == geo_id:
+                return div['id']
+
+    def cache_regions(self):
+        self.regions = list(Region.objects.filter(year=self.year).values('id','geo_id'))
+
+    def get_region_id_by_geo_id(self,geo_id):
+        for region in self.regions:
+            if region['geo_id'] == geo_id:
+                return region['id']
 
 
     def get_data(self,geo_type):
@@ -106,8 +121,8 @@ class GeoBuild(Build):
         state.longitude     = data.INTPTLON
 
         state.initials      = data.STUSPS
-        state.region_id     = data.REGION
-        state.division_id   = data.DIVISION
+        state.region_id     = self.get_region_id_by_geo_id(data.REGION)
+        state.division_id   = self.get_division_id_by_geo_id(data.DIVISION)
 
         if self.partialdb.skip_state(state): return
 
@@ -171,56 +186,56 @@ class GeoBuild(Build):
 
 
     def create_regions_and_divisons(self):
-        Region.objects.all().delete()
-        Division.objects.all().delete()
+        Region.objects.filter(year=self.year).delete()
+        Division.objects.filter(year=self.year).delete()
 
         regions = list()
-        north_east = Region(id=1,name='Northeast')
+        north_east = Region(geo_id=1,name='Northeast',year=self.year)
         regions.append(north_east)
 
-        mid_west = Region(id=2,name='Midwest')
+        mid_west = Region(geo_id=2,name='Midwest',year=self.year)
         regions.append(mid_west)
 
-        south = Region(id=3,name='South')
+        south = Region(geo_id=3,name='South',year=self.year)
         regions.append(south)
 
-        west = Region(id=4,name='West')
+        west = Region(geo_id=4,name='West',year=self.year)
         regions.append(west)
 
-        territory = Region(id=9,name='Territory')
+        territory = Region(geo_id=9,name='Territory',year=self.year)
         regions.append(territory)
 
         Region.objects.bulk_create(regions)
 
         divisions = list()
-        territory_div = Division(id=0,name='Territory',region=territory)
+        territory_div = Division(geo_id=0,name='Territory',region=territory,year=self.year)
         divisions.append(territory_div)
 
-        new_england = Division(id=1,name='New England',region=north_east)
+        new_england = Division(geo_id=1,name='New England',region=north_east,year=self.year)
         divisions.append(new_england)
 
-        mid_atlantic = Division(id=2,name='Mid-Atlantic',region=north_east)
+        mid_atlantic = Division(geo_id=2,name='Mid-Atlantic',region=north_east,year=self.year)
         divisions.append(mid_atlantic)
 
-        east_north_central = Division(id=3,name='East North Central',region=mid_west)
+        east_north_central = Division(geo_id=3,name='East North Central',region=mid_west,year=self.year)
         divisions.append(east_north_central)
 
-        west_north_central = Division(id=4,name='West North Central',region=mid_west)
+        west_north_central = Division(geo_id=4,name='West North Central',region=mid_west,year=self.year)
         divisions.append(west_north_central)
 
-        south_atlantic = Division(id=5,name='South Atlantic',region=south)
+        south_atlantic = Division(geo_id=5,name='South Atlantic',region=south,year=self.year)
         divisions.append(south_atlantic)
 
-        east_south_central = Division(id=6,name='East South Central',region=south)
+        east_south_central = Division(geo_id=6,name='East South Central',region=south,year=self.year)
         divisions.append(east_south_central)
 
-        west_south_central = Division(id=7,name='West South Central',region=south)
+        west_south_central = Division(geo_id=7,name='West South Central',region=south,year=self.year)
         divisions.append(west_south_central)
 
-        mountain = Division(id=8,name='Mountain',region=west)
+        mountain = Division(geo_id=8,name='Mountain',region=west,year=self.year)
         divisions.append(mountain)
 
-        pacific = Division(id=9,name='Pacific',region=west)
+        pacific = Division(geo_id=9,name='Pacific',region=west,year=self.year)
         divisions.append(pacific)
 
         Division.objects.bulk_create(divisions)
@@ -236,6 +251,8 @@ class GeoBuild(Build):
         print('\n')
         print('Building Regions and Divisions')
         self.create_regions_and_divisons()
+        self.cache_regions()
+        self.cache_divisions()
 
         for geo in self.geographies:
             print('Building data from geo directory ' + geo)
