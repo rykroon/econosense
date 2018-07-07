@@ -12,6 +12,7 @@ simpledbf = "*"
 "psycopg2-binary" = "*"
 requests = "*"
 xlrd = "*"
+django-autocomplete-light = "*"
 
 [dev-packages]
 
