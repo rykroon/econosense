@@ -1,17 +1,17 @@
 from django.shortcuts import render, HttpResponseRedirect, redirect
 from django.views import View
 from django.views.generic.edit import FormView
-from django.db.models import F,FloatField,DecimalField,ExpressionWrapper
-from datetime import datetime
-from audit.models import *
+#from django.db.models import F,FloatField,DecimalField,ExpressionWrapper
 
+from audit.models import *
 from .forms import BestPlacesToWorkForm, RentToIncomeRatioForm
-from data.models import JobLocation, Job #, State, Area
+from .models import JobLocation, Job #, State, Area
 
 import pandas as pd
-#import requests
 from django_pandas.io import read_frame
-#import json
+
+from dal import autocomplete
+
 
 # Create your views here.
 class BestPlacesToWorkView(FormView):
@@ -169,9 +169,7 @@ class RentToIncomeRatioView(FormView):
         context['form'] = form
 
         if form.is_valid():
-            start = datetime.now()
             result = self.calculate_rent_to_income_ratio(form)
-            print(datetime.now() - start)
             context['table_one'] = result['good_jobs']
             #context['table_two'] = result['bad_jobs']
 
@@ -276,3 +274,18 @@ class RentToIncomeRatioView(FormView):
         good_jobs = format_df(good_jobs,"Jobs that can afford rent")
 
         return {'good_jobs':good_jobs,'bad_jobs':bad_jobs}
+
+
+class JobAutocomplete(autocomplete.Select2QuerySetView):
+
+    def get_queryset(self):
+        # Don't forget to filter out results depending on the visitor !
+        # if not self.request.user.is_authenticated:
+        #     return Job.objects.none()
+
+        qs = Job.jobs.detailed_jobs().order_by('title')
+
+        if self.q:
+            qs = qs.filter(title__icontains=self.q)
+
+        return qs

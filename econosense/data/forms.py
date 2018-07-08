@@ -1,6 +1,7 @@
 from django import forms
 from django.db.models import Q, F
 from data.models import Job, Location, State, Area
+from dal import autocomplete
 
 class BestPlacesToWorkForm(forms.Form):
 
@@ -9,18 +10,25 @@ class BestPlacesToWorkForm(forms.Form):
         #self.custom_bootstrap()
 
 
-    job_category = forms.ModelChoiceField(
-        queryset=Job.jobs.major_jobs().order_by('title'),
-        required=False,
-        widget=forms.Select(attrs={'class': 'custom-select'})
-    )
+    # job_category = forms.ModelChoiceField(
+    #     queryset=Job.jobs.major_jobs().order_by('title'),
+    #     required=False,
+    #     widget=forms.Select(attrs={'class': 'custom-select'})
+    # )
 
+
+    # job = forms.ModelChoiceField(
+    #     queryset=Job.jobs.detailed_jobs(
+    #         ).annotate(major_id=F('parent__parent__parent')
+    #         ).order_by('title'),
+    #     widget=forms.Select(attrs={'class': 'custom-select'})
+    # )
 
     job = forms.ModelChoiceField(
-        queryset=Job.jobs.detailed_jobs(
-            ).annotate(major_id=F('parent__parent__parent')
-            ).order_by('title'),
-        widget=forms.Select(attrs={'class': 'custom-select'})
+        queryset=Job.jobs.detailed_jobs().order_by('title'),
+        widget=autocomplete.ModelSelect2(
+            url='job-autocomplete',
+            attrs={'class':'custom-select'})
     )
 
 

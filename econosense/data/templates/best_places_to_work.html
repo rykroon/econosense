@@ -13,14 +13,14 @@
     <form method='GET' class='needs-validation' novalidate>
 
       <!-- Major Job  -->
-      <div class='form-row'>
+      <!-- <div class='form-row'>
         <div class='col-12 col-md-10'>
           <div class='form-group '>
             <label for='{{ form.job_category.id_for_label }}'> {{ form.job_category.label }} (optional) </label>
             {{ form.job_category }}
           </div>
         </div>
-      </div>
+      </div> -->
 
       <!-- Job  -->
       <div class='form-row'>
@@ -147,4 +147,5 @@
 </script>
 
 <script src="{% static "best_places_to_work.js" %}"></script>
+{{ form.media }}
 {% endblock js %}
