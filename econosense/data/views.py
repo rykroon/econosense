@@ -5,7 +5,7 @@ from django.views.generic.edit import FormView
 
 from audit.models import *
 from .forms import BestPlacesToWorkForm, RentToIncomeRatioForm
-from .models import JobLocation, Job #, State, Area
+from .models import JobLocation, Job, Location, State, Area
 
 import pandas as pd
 from django_pandas.io import read_frame
@@ -287,5 +287,28 @@ class JobAutocomplete(autocomplete.Select2QuerySetView):
 
         if self.q:
             qs = qs.filter(title__icontains=self.q)
+
+        return qs
+
+
+class LocationAutocomplete(autocomplete.Select2QuerySetView):
+
+    def get_queryset(self):
+        # Don't forget to filter out results depending on the visitor !
+        # if not self.request.user.is_authenticated:
+        #     return Job.objects.none()
+
+        qs = Location.locations.all()
+
+        location_type = self.forwarded.get('location_type',None)
+
+        if location_type == 'state':
+            qs = State.states.states_and_pr().order_by('name')
+
+        elif location_type == 'area':
+            qs = Area.areas.default().order_by('name')
+
+        if self.q:
+            qs = qs.filter(name__icontains=self.q)
 
         return qs

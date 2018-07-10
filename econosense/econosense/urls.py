@@ -15,7 +15,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from data.views import BestPlacesToWorkView,RentToIncomeRatioView,JobAutocomplete
+from data.views import BestPlacesToWorkView,RentToIncomeRatioView,JobAutocomplete,LocationAutocomplete
 from main.views import home
 
 urlpatterns = [
@@ -24,4 +24,5 @@ urlpatterns = [
     path('best-places-to-work/',BestPlacesToWorkView.as_view()),
     path('rent-to-income-ratio/',RentToIncomeRatioView.as_view()),
     path('job-autocomplete/',JobAutocomplete.as_view(),name='job-autocomplete'),
+    path('location-autocomplete/',LocationAutocomplete.as_view(),name='location-autocomplete'),
 ]

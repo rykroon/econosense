@@ -28,7 +28,12 @@ class BestPlacesToWorkForm(forms.Form):
         queryset=Job.jobs.detailed_jobs().order_by('title'),
         widget=autocomplete.ModelSelect2(
             url='job-autocomplete',
-            attrs={'class':'custom-select'})
+            attrs={
+                'class':'custom-select',
+                'data-container-css-class':'custom-select',
+                'data-theme':''
+            }
+        )
     )
 
 
@@ -60,11 +65,11 @@ class BestPlacesToWorkForm(forms.Form):
         widget=forms.Select(attrs={'class': 'custom-select'})
     )
 
-    def custom_bootstrap(self):
-        self.fields['job_category'].widget.attrs['class'] = 'custom-select'
-        self.fields['job'].widget.attrs['class'] = 'custom-select'
-        self.fields['location_type'].widget.attrs['class'] = 'custom-control-input'
-        self.fields['rent'].widget.attrs['class'] = 'custom-select'
+    # def custom_bootstrap(self):
+    #     self.fields['job_category'].widget.attrs['class'] = 'custom-select'
+    #     self.fields['job'].widget.attrs['class'] = 'custom-select'
+    #     self.fields['location_type'].widget.attrs['class'] = 'custom-control-input'
+    #     self.fields['rent'].widget.attrs['class'] = 'custom-select'
 
 
 
@@ -81,20 +86,17 @@ class RentToIncomeRatioForm(forms.Form):
         widget=forms.RadioSelect(attrs={'class':'custom-control-input'})
     )
 
-    area_qs = Area.areas.default().order_by('name')
-
-    state_qs = State.states.states_and_pr()
-
-    #def get_area_qs(self): return self.area_qs
-    #def get_state_qs(self): return self.state_qs
-
     location = forms.ModelChoiceField(
-        queryset = Location.locations.
-            filter(
-                Q(id__in=state_qs) |
-                Q(id__in=area_qs)
-            ).order_by('name'),
-        widget=forms.Select(attrs={'class':'custom-select'})
+        queryset = Location.locations.all().order_by('name'),
+
+        widget=autocomplete.ModelSelect2(
+            url='location-autocomplete',
+            attrs={
+                'class':'custom-select',
+                'data-container-css-class':'custom-select',
+                'data-theme':''
+            },
+            forward=['location_type'])
     )
 
 

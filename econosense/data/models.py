@@ -87,6 +87,7 @@ class CombinedArea(Location):
 
 
 class Area(Location):
+    #add primary state
     parent          = models.ForeignKey("self",on_delete=models.CASCADE,null=True)
     combined_area   = models.ForeignKey("CombinedArea",on_delete=models.CASCADE,null=True)
 
