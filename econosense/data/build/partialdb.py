@@ -12,9 +12,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "econosense.settings")
 django.setup()
 
 from data.models import Job, Location
-# import django stuff
-# instead of keeping a list of skipped jobs and skipped_locations...
-# do a query to get the ids of available jobs and locations
+
 
 class PartialDatabase():
     PARTIAL_DATABASE = None
@@ -25,11 +23,11 @@ class PartialDatabase():
         except:
             self.PARTIAL_DATABASE = False
 
-        self.jobs = None
+        #self.jobs = None
         self.locations = None
 
         if self.PARTIAL_DATABASE:
-            self.jobs = list(Job.jobs.values_list('id',flat=True))
+            #self.jobs = list(Job.jobs.values_list('id',flat=True))
             self.locations = list(Location.locations.values_list('id',flat=True))
 
         self.skip_count = 0
@@ -42,12 +40,12 @@ class PartialDatabase():
 
     def skip_job(self,job):
         if self.PARTIAL_DATABASE:
-            job_id = str(job.occ_code)
+            job_id = str(job.code)
 
             #do not add jobs where the third digit from the left is greater than one
-            if int(job_id[2]) > 1 or job.occ_code >= 300000:
+            if int(job_id[2]) > 1 or job.code >= 300000:
                 self.skip_count += 1
-                self.skipped_jobs.append(job.occ_code)
+                self.skipped_jobs.append(job.code)
                 return True
 
         return False
@@ -55,8 +53,8 @@ class PartialDatabase():
 
     def skip_state(self,state):
         if self.PARTIAL_DATABASE:
-            if state.division.id not in [1,2,5]: #only keep east coast states
-                self.skipped_locations.append(state.geo_id)
+            if state.division.geo_id not in [1,2,5]: #only keep east coast states
+                self.skipped_locations.append(state.id)
                 return True
 
         return False
@@ -64,23 +62,19 @@ class PartialDatabase():
 
     def skip_area(self,area):
         if self.PARTIAL_DATABASE:
-            if area.parent_id is None:
-                self.skipped_locations.append(area.geo_id)
-                return True
-
-            #do not include Micropolitan areas
-            if area.lsad in ['M2','M6']:
-                self.skipped_locations.append(area.geo_id)
+            if area.lsad not in ['M3','M7']:
+                self.skipped_locations.append(area.id)
                 return True
 
         return False
 
     def skip_job_location(self,job_loc):
         if self.PARTIAL_DATABASE:
-            if job_loc.job_id not in self.jobs:
+
+            if job_loc.job_id == None:
                 return True
 
-            if job_loc.location_id not in self.locations:
+            if job_loc.location_id == None:
                 return True
 
         return False
@@ -88,7 +82,7 @@ class PartialDatabase():
 
     def skip_rent(self,rent):
         if self.PARTIAL_DATABASE:
-            if rent.location_id not in self.locations:
+            if rent.location_id == None:
                 return True
 
 

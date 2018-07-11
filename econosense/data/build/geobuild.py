@@ -124,7 +124,8 @@ class GeoBuild(Build):
         state.region_id     = self.get_region_id_by_geo_id(data.REGION)
         state.division_id   = self.get_division_id_by_geo_id(data.DIVISION)
 
-        if self.partialdb.skip_state(state): return
+        if self.partialdb.skip_state(state):
+            return
 
         state.save()
 
@@ -139,6 +140,9 @@ class GeoBuild(Build):
         csa.lsad        = data.LSAD
         csa.latitude    = data.INTPTLAT
         csa.longitude   = data.INTPTLON
+
+        if self.partialdb.skip_area(csa):
+            return
 
         csa.save()
 
@@ -176,11 +180,8 @@ class GeoBuild(Build):
                  area.combined_area_id = self.get_combined_area_id_by_geo_id(int(data.CNECTAFP))
             except: pass
 
-        if self.partialdb.status():
-            if self.partialdb.skip_area(area):
-                return
-            else:
-                area.parent_id = None
+        if self.partialdb.skip_area(area):
+            return
 
         area.save()
 

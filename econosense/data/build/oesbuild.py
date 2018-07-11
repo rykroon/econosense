@@ -126,9 +126,9 @@ class OesBuild(Build):
         if job.group == 'broad':       job.parent_id = parents['minor']
         if job.group == 'detailed':    job.parent_id = parents['broad']
 
-        if self.partialdb.skip_job(job): return
+        if not self.partialdb.skip_job(job):
+            job.save()
 
-        job.save()
         return job
 
 
