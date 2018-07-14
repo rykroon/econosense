@@ -30,8 +30,7 @@ class BestPlacesToWorkForm(forms.Form):
             url='job-autocomplete',
             attrs={
                 'class':'custom-select',
-                'data-container-css-class':'custom-select',
-                'data-theme':''
+                #'data-container-css-class':'custom-select',
             }
         )
     )
@@ -65,12 +64,6 @@ class BestPlacesToWorkForm(forms.Form):
         widget=forms.Select(attrs={'class': 'custom-select'})
     )
 
-    # def custom_bootstrap(self):
-    #     self.fields['job_category'].widget.attrs['class'] = 'custom-select'
-    #     self.fields['job'].widget.attrs['class'] = 'custom-select'
-    #     self.fields['location_type'].widget.attrs['class'] = 'custom-control-input'
-    #     self.fields['rent'].widget.attrs['class'] = 'custom-select'
-
 
 
 
@@ -93,8 +86,7 @@ class RentToIncomeRatioForm(forms.Form):
             url='location-autocomplete',
             attrs={
                 'class':'custom-select',
-                'data-container-css-class':'custom-select',
-                'data-theme':''
+                #'data-container-css-class':'custom-select',
             },
             forward=['location_type'])
     )

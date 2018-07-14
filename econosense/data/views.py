@@ -1,6 +1,7 @@
 from django.shortcuts import render, HttpResponseRedirect, redirect
 from django.views import View
 from django.views.generic.edit import FormView
+from django.db.models import Q
 #from django.db.models import F,FloatField,DecimalField,ExpressionWrapper
 
 from audit.models import *
@@ -305,10 +306,34 @@ class LocationAutocomplete(autocomplete.Select2QuerySetView):
         if location_type == 'state':
             qs = State.states.states_and_pr().order_by('name')
 
+            #if there are only 2 characters in the query then check if there is
+            # a match on the intiials
+            if self.q:
+                starts_with = Q(name__istartswith=self.q) | Q(name__icontains=' ' + self.q)
+                initials = None
+
+                if len(self.q) == 2:
+                    initials = Q(initials__iexact=self.q)
+
+                if initials is None:
+                    qs = qs.filter(starts_with)
+                else:
+                    qs = qs.filter(starts_with | initials)
+
+
         elif location_type == 'area':
             qs = Area.areas.default().order_by('name')
 
-        if self.q:
-            qs = qs.filter(name__icontains=self.q)
+            if self.q:
+                starts_with = Q(name__istartswith=self.q) | Q(name__icontains='-' + self.q)
+                initials = None
+
+                if len(self.q) == 2:
+                    initials = Q(name__contains=self.q.upper())
+
+                if initials is None:
+                    qs = qs.filter(starts_with)
+                else:
+                    qs = qs.filter(starts_with | initials)
 
         return qs
