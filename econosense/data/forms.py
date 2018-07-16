@@ -108,6 +108,16 @@ class RentToIncomeRatioForm(forms.Form):
         widget=forms.Select(attrs={'class': 'custom-select'})
     )
 
+    # rent = autocomplete.Select2ListChoiceField(
+    #     #choice_list=get_choice_list,
+    #
+    #     widget=autocomplete.ListSelect2(
+    #         url='rent-autocomplete',
+    #         attrs={'data-html':True}
+    #     )
+    # )
+
+
     def __init__(self, *args, **kwargs):
         super(RentToIncomeRatioForm, self).__init__(*args, **kwargs)
 

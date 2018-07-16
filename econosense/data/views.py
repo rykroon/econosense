@@ -337,3 +337,26 @@ class LocationAutocomplete(autocomplete.Select2QuerySetView):
                     qs = qs.filter(starts_with | initials)
 
         return qs
+
+
+class RentAutocompleteFromList(autocomplete.Select2ListView):
+
+    mappings =  {
+        'total':'All',
+        'no':'Studio',
+        'one':'1 bedroom',
+        'two':'2 bedrooms',
+        'three':'3 bedrooms',
+        'four':'4 bedrooms',
+        'five':'5 or more Bedrooms',
+    }
+
+    def get_list(self):
+        return ['All','Studio','1 bedroom','2 bedroom','3 bedroom','4 bedroom','5 or more bedrooms']
+        #return ['total','no','one','two','three','four','five']
+
+    def get_result_label(self, item):
+        return item
+
+    def get_selected_result_label(self, item):
+        return self.mappings[item]
