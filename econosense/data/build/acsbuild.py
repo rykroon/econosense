@@ -1,8 +1,5 @@
 import sys
 import os
-#import requests
-#from datetime import datetime
-#from partialdb import PartialDatabase
 from acsapi import AcsApi
 
 #Set up Django Environment

@@ -69,6 +69,7 @@ if __name__ == '__main__':
     from acsbuild import AcsBuild
     from oesbuild import OesBuild
     from geobuild import GeoBuild
+    from taxbuild import TaxBuild
 
     try:
         year = sys.argv[1]
@@ -89,7 +90,7 @@ if __name__ == '__main__':
         data_sources.append(source)
 
     except:
-        data_sources = ['geo','oes','acs']
+        data_sources = ['geo','oes','acs','tax']
 
 
     for source in data_sources:
@@ -105,6 +106,10 @@ if __name__ == '__main__':
         if source == 'acs':
             acs = AcsBuild(year)
             acs.build()
+
+        if source == 'tax':
+            tax = TaxBuild(year)
+            tax.build()
 
 
 

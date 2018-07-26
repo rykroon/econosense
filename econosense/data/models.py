@@ -175,17 +175,24 @@ class JobLocationQuerySet(models.QuerySet):
 
 
 class JobLocation(models.Model):
-    job         = models.ForeignKey('Job',on_delete=models.CASCADE,null=False)
-    location    = models.ForeignKey('Location',on_delete=models.CASCADE,null=False)
-    year        = models.IntegerField()
-    employed    = models.IntegerField()
-    jobs_1000   = models.FloatField()
-    average     = models.DecimalField(max_digits=8, decimal_places=2)
-    pct_10      = models.DecimalField(max_digits=8, decimal_places=2)
-    pct_25      = models.DecimalField(max_digits=8, decimal_places=2)
-    median      = models.DecimalField(max_digits=8, decimal_places=2)
-    pct_75      = models.DecimalField(max_digits=8, decimal_places=2)
-    pct_90      = models.DecimalField(max_digits=8, decimal_places=2)
+    job             = models.ForeignKey('Job',on_delete=models.CASCADE,null=False)
+    location        = models.ForeignKey('Location',on_delete=models.CASCADE,null=False)
+    year            = models.IntegerField()
+    employed        = models.IntegerField()
+    jobs_1000       = models.FloatField()
+    average         = models.DecimalField(max_digits=8, decimal_places=2)
+    pct_10          = models.DecimalField(max_digits=8, decimal_places=2)
+    pct_25          = models.DecimalField(max_digits=8, decimal_places=2)
+    median          = models.DecimalField(max_digits=8, decimal_places=2)
+    pct_75          = models.DecimalField(max_digits=8, decimal_places=2)
+    pct_90          = models.DecimalField(max_digits=8, decimal_places=2)
+
+    avg_gross       = models.ForeignKey('Gross',on_delete=models.CASCADE,related_name='average',null=True)
+    pct_10_gross    = models.ForeignKey('Gross',on_delete=models.CASCADE,related_name='pct_10',null=True)
+    pct_25_gross    = models.ForeignKey('Gross',on_delete=models.CASCADE,related_name='pct_25',null=True)
+    median_gross    = models.ForeignKey('Gross',on_delete=models.CASCADE,related_name='median',null=True)
+    pct_75_gross    = models.ForeignKey('Gross',on_delete=models.CASCADE,related_name='pct_75',null=True)
+    pct_90_gross    = models.ForeignKey('Gross',on_delete=models.CASCADE,related_name='pct_90',null=True)
 
     objects = models.Manager()
     job_locations = JobLocationQuerySet.as_manager()
@@ -194,8 +201,112 @@ class JobLocation(models.Model):
         unique_together = ('job','location','year')
         db_table = 'job_location'
 
+    def has_null_gross(self):
+        is_null = (self.avg_gross is None and (self.average > 0 and self.average < 999999))
+        is_null = is_null or (self.pct_10_gross is None and (self.pct_10 > 0 and self.pct_10 < 999999))
+        is_null = is_null or (self.pct_25_gross is None and (self.pct_25 > 0 and self.pct_25 < 999999))
+        is_null = is_null or (self.median_gross is None and (self.median > 0 and self.median < 999999))
+        is_null = is_null or (self.pct_75_gross is None and (self.pct_75 > 0 and self.pct_75 < 999999))
+        is_null = is_null or (self.pct_90_gross is None and (self.pct_90 > 0 and self.pct_90 < 999999))
+
+        return is_null
+
+    def set_gross(self,gross):
+        if gross is None:
+            return
+
+        if gross.amount == self.average:
+            self.avg_gross = gross
+
+        elif gross.amount == self.pct_10:
+            self.pct_10_gross = gross
+
+        elif gross.amount == self.pct_25:
+            self.pct_25_gross = gross
+
+        elif gross.amount == self.median:
+            self.median_gross = gross
+
+        elif gross.amount == self.pct_75:
+            self.pct_75_gross = gross
+
+        elif gross.amount == self.pct_90:
+            self.pct_90_gross = gross
+
+
+
+
     def __str__(self):
         return str(self.location) + ' - ' + str(self.job)
+
+
+
+class Gross(models.Model):
+    year                = models.IntegerField()
+    state               = models.ForeignKey('State',on_delete=models.CASCADE,null=False)
+    amount              = models.DecimalField(max_digits=8,decimal_places=2)
+
+    single              = models.ForeignKey('Tax',on_delete=models.CASCADE,related_name='single',null=True)
+    married             = models.ForeignKey('Tax',on_delete=models.CASCADE,related_name='married',null=True)
+    married_separately  = models.ForeignKey('Tax',on_delete=models.CASCADE,related_name='married_separately',null=True)
+    head_of_household   = models.ForeignKey('Tax',on_delete=models.CASCADE,related_name='head_of_household',null=True)
+
+    class Meta:
+        unique_together = ('year','state','amount')
+        db_table = 'gross'
+
+    def has_null_tax(self):
+        return self.single is None or self.married is None or self.married_separately is None or self.head_of_household is None
+
+    def set_tax(self,tax):
+        if tax.filing_status == 'single':
+            self.single = tax
+
+        elif tax.filing_status == 'married':
+            self.married = tax
+
+        elif tax.filing_status == 'married_separately':
+            self.married_separately = tax
+
+        elif tax.filing_status == 'head_of_household':
+            self.head_of_household = tax
+
+    def __str__(self):
+        return str(self.year) + ' ' + self.state.name + ' Gross Salary of ' + str(self.amount)
+
+
+
+class Tax(models.Model):
+    year            = models.IntegerField()
+    state           = models.ForeignKey('State',on_delete=models.CASCADE,null=False)
+
+    FILING_STATUS_CHOICES = (
+        ('single','Single'),
+        ('married','Married'),
+        ('married_separately','Married seperately'),
+        ('head_of_household','Head of household')
+    )
+
+    filing_status   = models.CharField(max_length=20,choices=FILING_STATUS_CHOICES)
+    amount          = models.DecimalField(max_digits=8,decimal_places=2)
+
+    fica_tax        = models.DecimalField(max_digits=8, decimal_places=2)
+    federal_tax     = models.DecimalField(max_digits=8, decimal_places=2)
+    state_tax       = models.DecimalField(max_digits=8, decimal_places=2)
+
+    class Meta:
+        unique_together = ('year','state','filing_status','amount')
+        db_table = 'tax'
+
+    def verbose_filing_status(self):
+        return self.filing_status
+        # for x,y in self.FILING_STATUS_CHOICES:
+        #     if self.filing_status == x:
+        #         return y
+
+    def __str__(self):
+        return str(self.year) + ' ' + self.state.name + ' salary of ' + str(self.amount) + 'filing as ' + self.verbose_filing_status()
+
 
 
 class Rent(models.Model):
@@ -247,44 +358,3 @@ class Rent(models.Model):
 #
 #     def __str__(self):
 #         return 'Filing as ' + self.filing_status + ' in ' + self.state.name + ' for the ' + str(self.year) + ' Tax year.'
-#
-#
-# class Gross(models.Model):
-#     amount              = models.DecimalField(max_digits=8,decimal_places=2)
-#     state               = models.ForeignKey('State',on_delete=models.CASCADE,null=False)
-#     year                = models.IntegerField()
-#
-#     single              = models.ForeignKey('Tax',on_delete=models.CASCADE,related_name='single',null=True)
-#     married             = models.ForeignKey('Tax',on_delete=models.CASCADE,related_name='married',null=True)
-#     married_separately  = models.ForeignKey('Tax',on_delete=models.CASCADE,related_name='married_separately',null=True)
-#     head_of_household   = models.ForeignKey('Tax',on_delete=models.CASCADE,related_name='head_of_household',null=True)
-#
-#     class Meta:
-#         unique_together = ('year','amount','state')
-#         db_table = 'gross'
-#
-#     def __str__(self):
-#         pass
-#
-#
-#
-# class Tax(models.Model):
-#     state       = models.ForeignKey('State',on_delete=models.CASCADE,null=False)
-#     year        = models.IntegerField()
-#
-#     fica_tax    = models.DecimalField(max_digits=8, decimal_places=2)
-#     federal_tax = models.DecimalField(max_digits=8, decimal_places=2)
-#     state_tax   = models.DecimalField(max_digits=8, decimal_places=2)
-#
-#     FILING_STATUS_CHOICES = (
-#         ('single','Single'),
-#         ('married','Married'),
-#         ('married_separately','Married seperately'),
-#         ('head_of_household','Head of household')
-#     )
-#
-#     filing_status   = models.CharField(max_length=20,choices=FILING_STATUS_CHOICES)
-#
-#     class Meta:
-#         unique_together = ('year','state','filing_status')
-#         db_table = 'tax'

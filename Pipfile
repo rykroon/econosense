@@ -13,6 +13,7 @@ simpledbf = "*"
 requests = "*"
 xlrd = "*"
 django-autocomplete-light = "*"
+requests-futures = "*"
 
 [dev-packages]
 
