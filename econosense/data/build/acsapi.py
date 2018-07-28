@@ -19,6 +19,10 @@ class AcsApi():
 
         self.base_url = 'https://api.census.gov/data/' #+ year + '/acs/acs1'
 
+        self.session = requests.Session()
+        self.adapter = requests.adapters.HTTPAdapter(max_retries=5)
+        self.session.mount(self.base_url,self.adapter)
+
 
     def get(self,group,variable,geography,year=None):
         if year is None:
@@ -31,7 +35,8 @@ class AcsApi():
             self.params['get'] = group + '_' + variable
             self.params['for'] = geography + ':*'
 
-            return requests.get(url,params=self.params)
+            #return requests.get(url,params=self.params)
+            return self.session.get(url,params=self.params)
 
         elif type(variable) == dict:
             result = dict()
@@ -40,6 +45,7 @@ class AcsApi():
                 self.params['get'] = group + '_' + var
                 self.params['for'] = geography + ':*'
 
-                result[key] = requests.get(url,params=self.params)
+                #result[key] = requests.get(url,params=self.params)
+                result[key] = self.session.get(url,params=self.params)
 
             return result
