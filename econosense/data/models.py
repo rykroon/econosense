@@ -201,6 +201,7 @@ class JobLocation(models.Model):
         unique_together = ('job','location','year')
         db_table = 'job_location'
 
+    #Checks if the JobLocation is missing a Gross Object
     def has_null_gross(self):
         is_null = (self.avg_gross is None and (self.average > 0 and self.average < 999999))
         is_null = is_null or (self.pct_10_gross is None and (self.pct_10 > 0 and self.pct_10 < 999999))
@@ -211,6 +212,7 @@ class JobLocation(models.Model):
 
         return is_null
 
+    #sets the Gross object to the appropriate field
     def set_gross(self,gross):
         if gross is None:
             return
@@ -234,8 +236,6 @@ class JobLocation(models.Model):
             self.pct_90_gross = gross
 
 
-
-
     def __str__(self):
         return str(self.location) + ' - ' + str(self.job)
 
@@ -255,8 +255,10 @@ class Gross(models.Model):
         unique_together = ('year','state','amount')
         db_table = 'gross'
 
+
     def has_null_tax(self):
         return self.single is None or self.married is None or self.married_separately is None or self.head_of_household is None
+
 
     def set_tax(self,tax):
         if tax.filing_status == 'single':
@@ -270,6 +272,7 @@ class Gross(models.Model):
 
         elif tax.filing_status == 'head_of_household':
             self.head_of_household = tax
+
 
     def __str__(self):
         return str(self.year) + ' ' + self.state.name + ' Gross Salary of ' + str(self.amount)
@@ -297,6 +300,10 @@ class Tax(models.Model):
     class Meta:
         unique_together = ('year','state','filing_status','amount')
         db_table = 'tax'
+
+    def is_missing_info(self):
+        return self.fica_tax == 0 and self.federal_tax == 0 and self.state_tax == 0
+
 
     def verbose_filing_status(self):
         return self.filing_status

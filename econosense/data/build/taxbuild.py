@@ -2,7 +2,6 @@ import sys
 import os
 import datetime
 import concurrent.futures
-import threading
 
 #Set up Django Environment
 import django
@@ -14,6 +13,7 @@ from data.models import JobLocation,State,Gross,Tax
 
 from data.build.build import Build
 from taxee import Taxee
+
 
 class TaxBuild(Build):
     def __init__(self,year):
@@ -30,8 +30,9 @@ class TaxBuild(Build):
         self.use_concurrency = True
 
     def refresh(self):
-        Gross.objects.filter(year=self.year).delete()
-        Tax.objects.filter(year=self.year).delete()
+
+        #I believe everytime I delete Gross/Tax objects then if there are any JobLocation
+        #objects that reference those deleted objects then those JobLocations also get deleted
         JobLocation.objects.filter(
             year=self.year).update(
                 avg_gross=None,
@@ -42,31 +43,17 @@ class TaxBuild(Build):
                 pct_90_gross=None
             )
 
+        Gross.objects.filter(year=self.year).delete()
+        Tax.objects.filter(year=self.year).delete()
+
 
     def build(self):
         self.refresh()
 
-
-
-        ###!!!!! im a fucking idiot
-        #I am not clearing the fields in the job_location table that were populated
-        #from previous runs
-
         states = State.objects.filter(year=self.year).exclude(region__geo_id=9)
         job_locs = JobLocation.objects.filter(year=self.year).filter(location__in=states)
-        # job_locs.update(
-        #     avg_gross=None,
-        #     pct_10_gross=None,
-        #     pct_25_gross=None,
-        #     median_gross=None,
-        #     pct_75_gross=None,
-        #     pct_90_gross=None
-        # )
-
 
         job_loc_length = len(job_locs)
-
-        #print(threading.active_count())
 
         i = 0
         times = list()
@@ -75,7 +62,7 @@ class TaxBuild(Build):
             i += 1
             state = job.location.state
 
-            #start = datetime.datetime.now()
+            start = datetime.datetime.now()
 
             if self.use_concurrency:
 
@@ -91,20 +78,15 @@ class TaxBuild(Build):
                 with concurrent.futures.ThreadPoolExecutor(3) as pool:
                     futures = {pool.submit(self.get_gross,state,amount) : amount for amount in amounts}
 
-                    #print(threading.active_count())
-
                     for future in concurrent.futures.as_completed(futures):
-
                         try:
                             gross = future.result()
+                        except:
+                            print(future.exception())
+
+                        if gross is not None:
                             gross.save()
                             job.set_gross(gross)
-
-                        except:
-                            pass
-
-                        if future.exception() is not None:
-                            print(future.exception())
 
             else:
 
@@ -119,10 +101,10 @@ class TaxBuild(Build):
             if job.has_null_gross():
                 print(str(job.id) + ' ' + str(job) + ' has null gross')
 
-            # end = datetime.datetime.now()
-            # times.append(end-start)
-            # avg_time = sum(times,datetime.timedelta(0)).total_seconds() / len(times)
-            # print(avg_time)
+            end = datetime.datetime.now()
+            times.append(end-start)
+            avg_time = sum(times,datetime.timedelta(0)).total_seconds() / len(times)
+            print(avg_time)
 
             job.save()
             print(str(i) + ' / ' + str(job_loc_length))
@@ -151,19 +133,15 @@ class TaxBuild(Build):
 
                 futures = {pool.submit(self.get_tax,state,filing_status,pay_rate): filing_status for filing_status in self.filing_statuses}
 
-                #print(threading.active_count())
-
                 for future in concurrent.futures.as_completed(futures):
                     try:
                         tax = future.result()
+                    except:
+                        print(future.exception())
+
+                    if tax is not None:
                         tax.save()
                         gross.set_tax(tax)
-                    except:
-                        pass
-
-                    #print exception if future had an exception
-                    if future.exception() is not None:
-                        print(future.exception())
 
         else:
 
@@ -185,6 +163,7 @@ class TaxBuild(Build):
         if gross.has_null_tax():
             print(str(gross) + ' has null tax')
 
+        #gross.save()
 
         return gross
 
@@ -197,12 +176,14 @@ class TaxBuild(Build):
         tax.filing_status = filing_status
         tax.amount = pay_rate
 
-
         income_tax = self.api.income_tax(self.year,pay_rate,filing_status,state.initials)
 
         tax.fica_tax = income_tax.fica_tax
         tax.state_tax = income_tax.state_tax
         tax.federal_tax = income_tax.federal_tax
+
+        if tax.is_missing_info():
+            print('tax is missing info')
 
         #tax.save()
 

@@ -23,6 +23,16 @@ class AcsApi():
         self.adapter = requests.adapters.HTTPAdapter(max_retries=5)
         self.session.mount(self.base_url,self.adapter)
 
+        self.geographies = {
+            'State'     :   'state',
+            'CBSA'      :   'metropolitan statistical area/micropolitan statistical area',
+            'NECTA'     :   'new england city and town area',
+            'METDIV'    :   'metropolitan division',
+            'NECTADIV'  :   'necta division',
+            'CSA'       :   'combined statistical area',
+            'CNECTA'    :   'combined new england city and town area'
+        }
+
 
     def get(self,group,variable,geography,year=None):
         if year is None:
@@ -49,3 +59,28 @@ class AcsApi():
                 result[key] = self.session.get(url,params=self.params)
 
             return result
+
+        #Median Gross Rent
+        def get_median_gross_rent(self,geography,num_of_bedrooms=None,year=None):
+            group = 'B25031'
+
+            variables = {
+                None    : '001E', #Total
+                0       : '002E', #No Bedroom
+                1       : '003E', #1 Bedroom
+                2       : '004E', #2 Bedroom
+                3       : '005E', #3 Bedroom
+                4       : '006E', #4 Bedroom
+                5       : '007E' #5 or More Bedrooms
+            }
+
+            var = variables[num_of_bedrooms]
+            geo = self.geographies[geography]
+
+            if year is None:
+                year = self.year
+
+            response = self.get(group,var,geo,year)
+
+            if response.status_code == 200:
+                result = response.json()

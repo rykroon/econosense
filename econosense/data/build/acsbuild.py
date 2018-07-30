@@ -32,7 +32,7 @@ class AcsBuild(Build):
         self.median_gross_rent = dict()
         self.median_gross_rent['group'] = 'B25031'
         self.median_gross_rent['variables'] = {
-            'Total'             : '001E',
+            'total'             : '001E',
             'no_bedroom'        : '002E',
             'one_bedroom'       : '003E',
             'two_bedroom'       : '004E',
@@ -99,7 +99,7 @@ class AcsBuild(Build):
                             continue
 
 
-                    if var_key == 'Total':                  rent.total = amount
+                    if var_key == 'total':                  rent.total = amount
                     elif var_key == 'no_bedroom':           rent.no_bedroom = amount
                     elif var_key == 'one_bedroom':          rent.one_bedroom = amount
                     elif var_key == 'two_bedroom':          rent.two_bedroom = amount

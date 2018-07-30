@@ -25,7 +25,7 @@ class Taxee():
     #returns the response from the taxee api's Federal Tax Brackets
     def get_federal_tax_brackets(self,year):
         url = self.base_url + '/federal/' + str(year)
-        return requests.get(url,headers=self.header)
+        return self.session.get(url,headers=self.header)
 
     #returns a dictionary of TaxStatistic instances
     def federal_tax_brackets(self,year):
@@ -44,10 +44,11 @@ class Taxee():
 
         return result
 
+
     #returns the response from the taxee api's State Tax Brackets
     def get_state_tax_brackets(self,year,state_abbreviation):
         url = self.base_url + '/state/' + str(year) + '/' + state_abbreviation
-        return requests.get(url,headers=self.header)
+        return self.session.get(url,headers=self.header)
 
     #returns a dictionary of TaxStatistic instances
     def state_tax_brackets(self,year,state):
@@ -71,11 +72,7 @@ class Taxee():
         url = self.base_url + 'calculate/' + str(year)
         data = {'pay_rate':pay_rate,'filing_status':filing_status,'state':state}
 
-
-        #return requests.post(url,headers=self.header,data=data)
         return self.session.post(url,headers=self.header,data=data)
-
-
 
 
     #returns an instance of IncomeTax
