@@ -64,6 +64,26 @@ class BestPlacesToWorkForm(forms.Form):
         widget=forms.Select(attrs={'class': 'custom-select'})
     )
 
+    include_tax = forms.BooleanField(
+        initial=False,
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class':'custom-control-input'})
+    )
+
+    FILING_STATUS_CHOICES = (
+        ('single','Single'),
+        ('married','Married'),
+        ('married_separately','Married Separately'),
+        ('head_of_household','Head of Household')
+    )
+
+    filing_status = forms.ChoiceField(
+        choices=FILING_STATUS_CHOICES,
+        initial='single',
+        required=False,
+        widget=forms.Select(attrs={'class':'custom-select disabled','disabled':True})
+    )
+
 
 
 

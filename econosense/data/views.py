@@ -33,15 +33,21 @@ class BestPlacesToWorkView(FormView):
         context['form'] = form
 
         if form.is_valid():
+            print('form is valid')
             context['table'] = self.calculate_best_place_to_work(form)
+        else:
+            print('form is not valid')
 
         return self.render_to_response(context)
 
 
     def calculate_best_place_to_work(self,form):
-        job = form.cleaned_data['job']
-        location_type = form.cleaned_data['location_type']
-        apartment = form.cleaned_data['rent']
+        job             = form.cleaned_data['job']
+        location_type   = form.cleaned_data['location_type']
+        apartment       = form.cleaned_data['rent']
+        include_tax     = form.cleaned_data['include_tax']
+        include_tax     = include_tax and location_type == 'state'
+        filing_status   = form.cleaned_data['filing_status']
 
         for choice in form.fields['location_type'].choices:
             if choice[0] == location_type: location_name = choice[1]
@@ -65,6 +71,22 @@ class BestPlacesToWorkView(FormView):
         if apartment != 'total': rent_col_name += '_bedroom'
 
         field_names = ['jobs_1000','median','location__name',rent_col_name]
+
+        if include_tax:
+            federal_col_name = 'median_gross__{}__federal_tax'.format(filing_status)
+            fica_col_name = 'median_gross__{}__fica_tax'.format(filing_status)
+            state_col_name = 'median_gross__{}__state_tax'.format(filing_status)
+
+            field_names.append(federal_col_name)
+            field_names.append(fica_col_name)
+            field_names.append(state_col_name)
+
+            print(federal_col_name)
+            print(fica_col_name)
+            print(state_col_name)
+
+
+
         if location_type == 'state':
             field_names.append('location__state__initials')
 
@@ -74,6 +96,10 @@ class BestPlacesToWorkView(FormView):
             fieldnames=field_names,
             verbose=True,
             coerce_float=True)
+
+        if include_tax:
+            df['median'] = df['median'] - df[federal_col_name] - df[fica_col_name] - df[state_col_name]
+
 
         #Calculate Net income
         # tax = TaxApi()
@@ -88,9 +114,9 @@ class BestPlacesToWorkView(FormView):
 
         #Calculate score
         df['score'] = 100 * (
-            (.25 * self.normalize(df['median'])) +
-            (.5 * self.normalize(df['jobs_1000'])) +
-            (.25 * (1 - self.normalize(df[rent_col_name]))))
+            (.3 * self.normalize(df['median'])) +
+            (.4 * self.normalize(df['jobs_1000'])) +
+            (.3 * (1 - self.normalize(df[rent_col_name]))))
 
         # df['score'] = ((.5 * df['jobs_1000']) * (.25 * (df['median'] / df[rent_col_name])))
         # df['score'] = self.normalize(df['score']) * 100
@@ -123,7 +149,7 @@ class BestPlacesToWorkView(FormView):
             'Rent'                      :   'Median gross monthly rent',
             'Employment per 1000 jobs'  :   'The number of jobs in the given occupation per 1,000 jobs in the given area.',
             location_name               :   location_name,
-            'Score'                     :   'Employment per 1000 jobs is 50%, Salary is 25%, and Rent is 25%'
+            'Score'                     :   'Employment per 1000 jobs is 40%, Salary is 30%, and Rent is 30%'
         }
 
         #align text right for numeric data types and align text left for text

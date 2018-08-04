@@ -64,6 +64,34 @@
           </div>
         </div>
       </div>
+
+
+      <!-- Include Tax -->
+      <div class='form-row'>
+        <div class='col-12'>
+          <div class='form-group'>
+
+            <div class='custom-control custom-checkbox'>
+              {{ form.include_tax }}
+              <label class='custom-control-label' for='{{ form.include_tax.id_for_label }}'> {{ form.include_tax.label }} </label>
+            </div>
+
+          </div> <!-- form-group -->
+        </div>
+      </div> <!-- form-row -->
+      <!-- /Include Tax -->
+
+      <!-- Filing Status  -->
+      <div class='form-row'>
+        <div class='col-12  col-md-4'>
+          <div class='form-group'>
+            <label for='{{ form.filing_status.id_for_label }}'> {{ form.filing_status.label }} </label>
+            {{ form.filing_status }}
+          </div>
+        </div>
+      </div>
+
+
       <!-- Submit Button -->
       <button type='submit' class='btn btn-primary'>Search</button>
     </form>
@@ -144,12 +172,6 @@
       });
     }, false);
   })();
-
-
-  $(document).on('autocompleteLightInitialize', '[data-autocomplete-light-function=select2]', function() {
-    // do select2 configuration on $(this)
-
-})
 
 
 </script>
