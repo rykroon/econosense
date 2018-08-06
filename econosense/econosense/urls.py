@@ -15,7 +15,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from data.views import BestPlacesToWorkView,RentToIncomeRatioView,JobAutocomplete,LocationAutocomplete,RentAutocompleteFromList
+from data.views import BestPlacesToWorkView,RentToIncomeRatioView,data_table_test
+from data.ajax import JobAutocomplete,LocationAutocomplete,RentAutocompleteFromList,test
 from main.views import home
 
 urlpatterns = [
@@ -23,7 +24,9 @@ urlpatterns = [
     path('', home),
     path('best-places-to-work/',BestPlacesToWorkView.as_view()),
     path('rent-to-income-ratio/',RentToIncomeRatioView.as_view()),
-    path('job-autocomplete/',JobAutocomplete.as_view(),name='job-autocomplete'),
-    path('location-autocomplete/',LocationAutocomplete.as_view(),name='location-autocomplete'),
-    path('rent-autocomplete/',RentAutocompleteFromList.as_view(),name='rent-autocomplete'),
+    path('ajax/job-autocomplete/',JobAutocomplete.as_view(),name='job-autocomplete'),
+    path('ajax/location-autocomplete/',LocationAutocomplete.as_view(),name='location-autocomplete'),
+    path('ajax/rent-autocomplete/',RentAutocompleteFromList.as_view(),name='rent-autocomplete'),
+    path('ajax/test/',test),
+    path('data-table-test/',data_table_test)
 ]

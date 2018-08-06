@@ -106,9 +106,7 @@ class AreaQuerySet(models.QuerySet):
 
 
 class JobQueryset(models.QuerySet):
-    # def __init__(self):
-    #     super().__init()
-    #     self = self.filter(year=2016)
+
     def year(self):
         try:    year = os.environ['YEAR']
         except: year = None

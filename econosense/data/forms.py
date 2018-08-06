@@ -27,7 +27,7 @@ class BestPlacesToWorkForm(forms.Form):
     job = forms.ModelChoiceField(
         queryset=Job.jobs.detailed_jobs().order_by('title'),
         widget=autocomplete.ModelSelect2(
-            url='job-autocomplete',
+            url='ajax/job-autocomplete',
             attrs={
                 'class':'custom-select',
                 #'data-container-css-class':'custom-select',
@@ -85,8 +85,6 @@ class BestPlacesToWorkForm(forms.Form):
     )
 
 
-
-
 class RentToIncomeRatioForm(forms.Form):
     LOCATION_TYPE_CHOICES = (
         ('state','State'),
@@ -103,7 +101,7 @@ class RentToIncomeRatioForm(forms.Form):
         queryset = Location.locations.all().order_by('name'),
 
         widget=autocomplete.ModelSelect2(
-            url='location-autocomplete',
+            url='ajax/location-autocomplete',
             attrs={
                 'class':'custom-select',
                 #'data-container-css-class':'custom-select',

@@ -2,11 +2,14 @@ from django.shortcuts import render, HttpResponseRedirect, redirect
 from django.views import View
 from django.views.generic.edit import FormView
 from django.db.models import Q
+from django.http import HttpResponse
 #from django.db.models import F,FloatField,DecimalField,ExpressionWrapper
 
 from audit.models import *
 from .forms import BestPlacesToWorkForm, RentToIncomeRatioForm
 from .models import JobLocation, Job, Location, State, Area
+
+import json
 
 import pandas as pd
 from django_pandas.io import read_frame
@@ -20,7 +23,6 @@ class BestPlacesToWorkView(FormView):
     http_method_names = ['get']
     template_name = 'best_places_to_work.html'
     success_url = '/best-places-to-work/'
-
 
 
     def get(self, request, *args, **kwargs):
@@ -101,25 +103,11 @@ class BestPlacesToWorkView(FormView):
             df['median'] = df['median'] - df[federal_col_name] - df[fica_col_name] - df[state_col_name]
 
 
-        #Calculate Net income
-        # tax = TaxApi()
-        # def apply_net(row):
-        #     gross = row['median']
-        #     state = row['location__state__initials']
-        #     return tax.get_net_income(2016,gross,'single',state)
-        #
-        # if location_type == 'state' and False:
-        #     df['median'] = df.apply(apply_net,axis=1)
-
-
         #Calculate score
         df['score'] = 100 * (
             (.3 * self.normalize(df['median'])) +
             (.4 * self.normalize(df['jobs_1000'])) +
             (.3 * (1 - self.normalize(df[rent_col_name]))))
-
-        # df['score'] = ((.5 * df['jobs_1000']) * (.25 * (df['median'] / df[rent_col_name])))
-        # df['score'] = self.normalize(df['score']) * 100
 
 
         #Sort by Score and add indexes
@@ -289,7 +277,7 @@ class RentToIncomeRatioView(FormView):
                 else:
                     table_header.append([col,'text-left',tool_tips[col]])
 
-            df['Ratio']      = df['Ratio'].map('{:,.2f}'.format)
+            df['Ratio']     = df['Ratio'].map('{:,.2f}'.format)
             df['Rent']      = df['Rent'].map('${:,.2f}'.format)
             df['Salary']    = df['Salary'].map('${:,.2f}'.format)
 
@@ -303,86 +291,6 @@ class RentToIncomeRatioView(FormView):
         return {'good_jobs':good_jobs,'bad_jobs':bad_jobs}
 
 
-class JobAutocomplete(autocomplete.Select2QuerySetView):
-
-    def get_queryset(self):
-        # Don't forget to filter out results depending on the visitor !
-        # if not self.request.user.is_authenticated:
-        #     return Job.objects.none()
-
-        qs = Job.jobs.detailed_jobs().order_by('title')
-
-        if self.q:
-            qs = qs.filter(title__icontains=self.q)
-
-        return qs
-
-
-class LocationAutocomplete(autocomplete.Select2QuerySetView):
-
-    def get_queryset(self):
-        # Don't forget to filter out results depending on the visitor !
-        # if not self.request.user.is_authenticated:
-        #     return Job.objects.none()
-
-        qs = Location.locations.all()
-
-        location_type = self.forwarded.get('location_type',None)
-
-        if location_type == 'state':
-            qs = State.states.states_and_pr().order_by('name')
-
-            #if there are only 2 characters in the query then check if there is
-            # a match on the intiials
-            if self.q:
-                starts_with = Q(name__istartswith=self.q) | Q(name__icontains=' ' + self.q)
-                initials = None
-
-                if len(self.q) == 2:
-                    initials = Q(initials__iexact=self.q)
-
-                if initials is None:
-                    qs = qs.filter(starts_with)
-                else:
-                    qs = qs.filter(starts_with | initials)
-
-
-        elif location_type == 'area':
-            qs = Area.areas.default().order_by('name')
-
-            if self.q:
-                starts_with = Q(name__istartswith=self.q) | Q(name__icontains='-' + self.q)
-                initials = None
-
-                if len(self.q) == 2:
-                    initials = Q(name__contains=self.q.upper())
-
-                if initials is None:
-                    qs = qs.filter(starts_with)
-                else:
-                    qs = qs.filter(starts_with | initials)
-
-        return qs
-
-
-class RentAutocompleteFromList(autocomplete.Select2ListView):
-
-    mappings =  {
-        'total':'All',
-        'no':'Studio',
-        'one':'1 bedroom',
-        'two':'2 bedrooms',
-        'three':'3 bedrooms',
-        'four':'4 bedrooms',
-        'five':'5 or more Bedrooms',
-    }
-
-    def get_list(self):
-        return ['All','Studio','1 bedroom','2 bedroom','3 bedroom','4 bedroom','5 or more bedrooms']
-        #return ['total','no','one','two','three','four','five']
-
-    def get_result_label(self, item):
-        return item
-
-    def get_selected_result_label(self, item):
-        return self.mappings[item]
+def data_table_test(request):
+    context = None
+    return render(request,'data_table_test.html',context)

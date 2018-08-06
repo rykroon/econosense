@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class='row m-5'>
+  <div class='col-12'>
+    <h2 class='display-2 text-center'>Data Table Test using Ajax</h2>
+  </div>
+</div>
+
+<div class='row'>
+  <div class='col-12 offset-1'>
+    <button id='btn15'>2015</button>
+    <button id='btn16'>2016</button>
+  </div>
+</div>
+
+<div class='row'>
+  <div class='col-12 offset-1'>
+    <button id='btnMajor'>Major Jobs</button>
+    <button id='btnMinor'>Minor Jobs</button>
+    <button id='btnBroad'>Broad Jobs</button>
+    <button id='btnDetailed'>Detailed Jobs</button>
+  </div>
+</div>
+
+<!-- Result Table -->
+<div class='row my-3'>
+  <div class='col-12 offset-md-1 col-md-10'>
+    <div class='table-responsive' >
+      <table id='result-table' class='table table-hover border-left border-right'>
+
+      </table>
+    </div>
+  </div>
+</div>
+
+
+{% endblock content %}
+
+{% block js %}
+<script>
+
+  var table = $('#result-table').DataTable({
+    ajax:{
+      url:'/ajax/test/?year=2016',
+      dataSrc:''
+    },
+    columns:[
+      {data:'id'},
+      {data:'code'},
+      {data:'year'},
+      {data:'title'},
+      {data:'group'},
+    ]
+  });
+
+  function reload_table (table,obj) {
+    url = '/ajax/test/?';
+
+    for (var k in obj){
+      url += k + '=' + obj[k]
+    }
+
+    table.ajax.url(url).load();
+  }
+
+  $('#btn15').click(function(){
+    reload_table(table,{'year':2015});
+  });
+
+  $('#btn16').click(function(){
+    reload_table(table,{'year':2016});
+  });
+
+  $('#btnMajor').click(function(){
+    reload_table(table,{'group':'major'});
+  });
+
+  $('#btnMinor').click(function(){
+    reload_table(table,{'group':'minor'});
+  });
+
+  $('#btnBroad').click(function(){
+    reload_table(table,{'group':'broad'});
+  });
+
+  $('#btnDetailed').click(function(){
+    reload_table(table,{'group':'detailed'});
+  });
+
+
+
+
+
+
+
+</script>
+{% endblock js %}
