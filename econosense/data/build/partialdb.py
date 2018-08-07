@@ -53,7 +53,7 @@ class PartialDatabase():
 
     def skip_state(self,state):
         if self.PARTIAL_DATABASE:
-            if state.division.geo_id not in [1,2,5]: #only keep east coast states
+            if state.division.geo_id not in [2]: #only keep mid-atlantic states
                 self.skipped_locations.append(state.id)
                 return True
 
