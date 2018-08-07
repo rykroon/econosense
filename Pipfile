@@ -4,7 +4,6 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-django = "*"
 django-heroku = "*"
 gunicorn = "*"
 django-pandas = "*"
@@ -13,9 +12,9 @@ simpledbf = "*"
 requests = "*"
 xlrd = "*"
 django-autocomplete-light = "*"
-requests-futures = "*"
+django = "==2.0"
 
 [dev-packages]
 
 [requires]
-python_version = "3.6"
+python_version = "3.7"

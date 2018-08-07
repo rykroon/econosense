@@ -39,6 +39,7 @@
           <div class='form-group '>
             <label for='{{ form.location.id_for_label }}'> {{ form.location.label }} </label>
             {{ form.location }}
+            {{ form.location_value }}
             <div class='invalid-feedback'>
               Location is missing
             </div>
@@ -61,9 +62,6 @@
 
     </form>
   </div> <!-- end column-->
-
-  <!-- <div class='col-md-5 border-left d-none d-md-block'>
-  </div>  -->
 
 </div> <!-- end row -->
 
@@ -89,11 +87,6 @@
           <!-- { for index,row in table_one.data.iterrows } -->
           {% for index,rank,job,rent,salary,ratio in table_one.data.itertuples %}
           <tr>
-            <!-- <td class="text-right">{{ row.0 }}</td>
-            <td class="text-left">{{ row.1 }}</td>
-            <td class="text-right">{{ row.2 }}</td>
-            <td class="text-right">{{ row.3 }}</td>
-            <td class="text-right">{{ row.4 }}</td> -->
 
             <td class="text-right">{{ rank }}</td>
             <td class="text-left">{{ job }}</td>
@@ -125,6 +118,55 @@
     location.hash = 'result-table';
   }
 
+  function get_location_type(){
+    if ($('#id_location_type_0').is(':checked')){
+      return $('#id_location_type_0').val();
+    } else if ($('#id_location_type_1').is(':checked')){
+      return $('#id_location_type_1').val();
+    }
+  }
+
+
+  $('#id_location').autocomplete({
+    //source: "/ajax/jobs"
+    minLength: 0,
+    source: function(request,response) {
+      $.ajax({
+        url:"/ajax/locations",
+        data: {term:request.term,location_type:get_location_type()},
+        dataType:'json',
+        type:'GET',
+        success:function(data){
+            return response(data);
+        },
+      });
+    },
+    search:function(event,ui) {
+      //because of some stupid bug the below line of code is necessary
+      $('#id_location').data("ui-autocomplete").menu.bindings = $();
+    },
+    select: function(event,ui){
+      $('#id_location').val(ui.item.label);
+      $('#id_location_value').val(ui.item.value);
+      return false;
+    },
+    focus:function(event,ui){
+      $('#id_location').val(ui.item.label);
+      $('#id_location_value').val(ui.item.value);
+      return false;
+    },
+    change:function(event,ui){
+      if (ui.item === null) {
+        $('#id_location_value').val('');
+      }
+      return false;
+
+    }
+  }).focus(function(){
+    $(this).autocomplete('search',$(this).val());
+  });
+
+
   // Example starter JavaScript for disabling form submissions if there are invalid fields
   (function() {
     'use strict';
@@ -144,8 +186,8 @@
       });
     }, false);
   })();
+
 </script>
 
 <script src="{% static "rent_to_income_ratio.js" %}">  </script>
-{{ form.media }}
 {% endblock js %}

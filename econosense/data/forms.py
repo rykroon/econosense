@@ -7,14 +7,6 @@ class BestPlacesToWorkForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(BestPlacesToWorkForm, self).__init__(*args, **kwargs)
-        #self.custom_bootstrap()
-
-
-    # job_category = forms.ModelChoiceField(
-    #     queryset=Job.jobs.major_jobs().order_by('title'),
-    #     required=False,
-    #     widget=forms.Select(attrs={'class': 'custom-select'})
-    # )
 
 
     # job = forms.ModelChoiceField(
@@ -24,15 +16,25 @@ class BestPlacesToWorkForm(forms.Form):
     #     widget=forms.Select(attrs={'class': 'custom-select'})
     # )
 
-    job = forms.ModelChoiceField(
-        queryset=Job.jobs.detailed_jobs().order_by('title'),
-        widget=autocomplete.ModelSelect2(
-            url='ajax/job-autocomplete',
-            attrs={
-                'class':'custom-select',
-                #'data-container-css-class':'custom-select',
-            }
-        )
+    # job = forms.ModelChoiceField(
+    #     queryset=Job.jobs.detailed_jobs().order_by('title'),
+    #     widget=autocomplete.ModelSelect2(
+    #         url='/ajax/job-autocomplete',
+    #         attrs={
+    #             'class':'custom-select',
+    #         }
+    #     )
+    # )
+
+    #This is the job autocomplete field
+    job = forms.CharField(
+        widget=forms.TextInput(attrs={'class':'form-control'})
+    )
+
+    #this is a hidden field that stores the result of the above autocomplete field
+    job_value = forms.ModelChoiceField(
+        queryset=Job.jobs.detailed_jobs(),
+        widget=forms.TextInput(attrs={'hidden':True})
     )
 
 
@@ -97,16 +99,25 @@ class RentToIncomeRatioForm(forms.Form):
         widget=forms.RadioSelect(attrs={'class':'custom-control-input'})
     )
 
-    location = forms.ModelChoiceField(
-        queryset = Location.locations.all().order_by('name'),
+    # location = forms.ModelChoiceField(
+    #     queryset = Location.locations.all().order_by('name'),
+    #
+    #     widget=autocomplete.ModelSelect2(
+    #         url='/ajax/location-autocomplete',
+    #         attrs={
+    #             'class':'custom-select',
+    #         },
+    #         forward=['location_type'])
+    # )
 
-        widget=autocomplete.ModelSelect2(
-            url='ajax/location-autocomplete',
-            attrs={
-                'class':'custom-select',
-                #'data-container-css-class':'custom-select',
-            },
-            forward=['location_type'])
+    location = forms.CharField(
+        widget=forms.TextInput(attrs={'class':'form-control'})
+    )
+
+    #this is a hidden field that stores the result of the above autocomplete field
+    location_value = forms.ModelChoiceField(
+        queryset=Location.locations.all(),
+        widget=forms.TextInput(attrs={'hidden':True})
     )
 
 
@@ -125,15 +136,6 @@ class RentToIncomeRatioForm(forms.Form):
         initial='total',
         widget=forms.Select(attrs={'class': 'custom-select'})
     )
-
-    # rent = autocomplete.Select2ListChoiceField(
-    #     #choice_list=get_choice_list,
-    #
-    #     widget=autocomplete.ListSelect2(
-    #         url='rent-autocomplete',
-    #         attrs={'data-html':True}
-    #     )
-    # )
 
 
     def __init__(self, *args, **kwargs):

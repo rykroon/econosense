@@ -1,21 +1,13 @@
 from django.shortcuts import render, HttpResponseRedirect, redirect
 from django.views import View
 from django.views.generic.edit import FormView
-from django.db.models import Q
-from django.http import HttpResponse
-#from django.db.models import F,FloatField,DecimalField,ExpressionWrapper
 
 from audit.models import *
 from .forms import BestPlacesToWorkForm, RentToIncomeRatioForm
 from .models import JobLocation, Job, Location, State, Area
 
-import json
-
 import pandas as pd
 from django_pandas.io import read_frame
-
-from dal import autocomplete
-
 
 # Create your views here.
 class BestPlacesToWorkView(FormView):
@@ -35,16 +27,14 @@ class BestPlacesToWorkView(FormView):
         context['form'] = form
 
         if form.is_valid():
-            print('form is valid')
             context['table'] = self.calculate_best_place_to_work(form)
-        else:
-            print('form is not valid')
 
         return self.render_to_response(context)
 
 
     def calculate_best_place_to_work(self,form):
-        job             = form.cleaned_data['job']
+        # job             = form.cleaned_data['job']
+        job             = form.cleaned_data['job_value']
         location_type   = form.cleaned_data['location_type']
         apartment       = form.cleaned_data['rent']
         include_tax     = form.cleaned_data['include_tax']
@@ -194,7 +184,7 @@ class RentToIncomeRatioView(FormView):
 
     def calculate_rent_to_income_ratio(self,form):
         location_type = form.cleaned_data['location_type']
-        location = form.cleaned_data['location']
+        location = form.cleaned_data['location_value']
         apartment = form.cleaned_data['rent']
 
         rent_column_name = 'location__rent__' + apartment
@@ -221,25 +211,9 @@ class RentToIncomeRatioView(FormView):
             verbose=False,
             coerce_float=True)
 
-        #Calculate Net income
-        # tax = TaxApi()
-        # def apply_net(row):
-        #     gross = row['median']
-        #     state = row['location__state__initials']
-        #     return tax.get_net_income(2016,gross,'single',state)
-        #
-        # if location_type == 'state' and False:
-        #     df['median'] = df.apply(apply_net,axis=1)
-
-
-
         df['ratio'] = (df[rent_column_name] * 12) / df['median'] * 100
 
-        #bad_jobs = df[df['ratio'] > 30]
-        #good_jobs = df[df['ratio'] <= 30]
         good_jobs = df
-
-        #bad_jobs = bad_jobs.sort_values(by='ratio',ascending=False)
         good_jobs = good_jobs.sort_values(by='ratio',ascending=True)
 
 
@@ -282,8 +256,6 @@ class RentToIncomeRatioView(FormView):
             df['Salary']    = df['Salary'].map('${:,.2f}'.format)
 
             return {'title':title,'header':table_header,'data':df}
-
-
 
         bad_jobs = None#format_df(bad_jobs,"Jobs that can't afford rent")
         good_jobs = format_df(good_jobs,"Jobs that can afford rent")

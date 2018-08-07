@@ -23,6 +23,12 @@
   </div>
 </div>
 
+<div class='row'>
+  <div class='col-12 offset-1'>
+    <input type='text' id='autocomplete'>
+  </div>
+</div>
+
 <!-- Result Table -->
 <div class='row my-3'>
   <div class='col-12 offset-md-1 col-md-10'>
@@ -86,10 +92,28 @@
 
   $('#btnDetailed').click(function(){
     reload_table(table,{'group':'detailed'});
+    console.log(x.data("ui-autocomplete").menu.bindings.length);
   });
 
+  $('#autocomplete').autocomplete({
+    //source: "/ajax/jobs"
+    minLength: 2,
+    source: function(request,response) {
+      $.ajax({
+        url:"/ajax/jobs",
+        data: {term:request.term},
+        dataType:'json',
+        type:'GET',
+        success:function(data){
+            //because of some stupid bug the below line of code is necessary
+            $('#autocomplete').data("ui-autocomplete").menu.bindings = $();
+            return response(data);
+        },
+      });
+    }
+  });
 
-
+console.log(x.data("ui-autocomplete").menu.bindings.length);
 
 
 

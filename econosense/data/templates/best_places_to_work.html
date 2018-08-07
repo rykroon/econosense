@@ -12,22 +12,13 @@
   <div class='col-12 offset-md-2 col-md-8'>
     <form method='GET' class='needs-validation' novalidate>
 
-      <!-- Major Job  -->
-      <!-- <div class='form-row'>
-        <div class='col-12 col-md-10'>
-          <div class='form-group '>
-            <label for='{{ form.job_category.id_for_label }}'> {{ form.job_category.label }} (optional) </label>
-            {{ form.job_category }}
-          </div>
-        </div>
-      </div> -->
-
       <!-- Job  -->
       <div class='form-row'>
         <div class='col-12'>
           <div class='form-group'>
             <label for='{{ form.job.id_for_label }}'> {{ form.job.label }} </label>
             {{ form.job }}
+            {{ form.job_value }}
             <div class="invalid-feedback">
               Job is missing
             </div>
@@ -50,9 +41,9 @@
               {% endfor %}
             </div>
 
-          </div> <!-- form-group -->
+          </div>
         </div>
-      </div> <!-- form-row -->
+      </div>
       <!-- /location type -->
 
       <!-- Rent  -->
@@ -76,9 +67,9 @@
               <label class='custom-control-label' for='{{ form.include_tax.id_for_label }}'> {{ form.include_tax.label }} </label>
             </div>
 
-          </div> <!-- form-group -->
+          </div>
         </div>
-      </div> <!-- form-row -->
+      </div>
       <!-- /Include Tax -->
 
       <!-- Filing Status  -->
@@ -97,10 +88,7 @@
     </form>
   </div>
 
-  <!-- <div class='col-md-5 border-left d-none d-md-block'>
-  </div> -->
-
-</div> <!-- row -->
+</div> <!-- Form -->
 
 <hr class='my-3'>
 
@@ -149,8 +137,48 @@
 
   if (location.search !== '') {
     location.hash = 'result-table';
-    //console.log(location.hash);
   }
+
+
+  $('#id_job').autocomplete({
+    minLength: 0,
+    source: function(request,response) {
+      $.ajax({
+        url:"/ajax/jobs",
+        data: {term:request.term},
+        dataType:'json',
+        type:'GET',
+        success:function(data){
+
+            return response(data);
+        },
+      });
+    },
+    search:function(event,ui) {
+      //because of some stupid bug the below line of code is necessary
+      $('#id_job').data("ui-autocomplete").menu.bindings = $();
+    },
+    select: function(event,ui){
+      $('#id_job').val(ui.item.label);
+      $('#id_job_value').val(ui.item.value);
+      return false;
+    },
+    focus:function(event,ui){
+      $('#id_job').val(ui.item.label);
+      $('#id_job_value').val(ui.item.value);
+      return false;
+    },
+    change:function(event,ui){
+      if (ui.item === null) {
+        $('#id_job_value').val('');
+      }
+      return false;
+
+    }
+  }).focus(function(){
+    $(this).autocomplete('search',$(this).val());
+  });
+
 
 
 // Example starter JavaScript for disabling form submissions if there are invalid fields
@@ -177,5 +205,5 @@
 </script>
 
 <script src="{% static "best_places_to_work.js" %}"></script>
-{{ form.media }}
+
 {% endblock js %}
