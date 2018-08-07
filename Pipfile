@@ -11,7 +11,6 @@ simpledbf = "*"
 "psycopg2-binary" = "*"
 requests = "*"
 xlrd = "*"
-django-autocomplete-light = "*"
 django = "==2.0"
 
 [dev-packages]

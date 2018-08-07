@@ -1,30 +1,11 @@
 from django import forms
 from django.db.models import Q, F
 from data.models import Job, Location, State, Area
-from dal import autocomplete
 
 class BestPlacesToWorkForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(BestPlacesToWorkForm, self).__init__(*args, **kwargs)
-
-
-    # job = forms.ModelChoiceField(
-    #     queryset=Job.jobs.detailed_jobs(
-    #         ).annotate(major_id=F('parent__parent__parent')
-    #         ).order_by('title'),
-    #     widget=forms.Select(attrs={'class': 'custom-select'})
-    # )
-
-    # job = forms.ModelChoiceField(
-    #     queryset=Job.jobs.detailed_jobs().order_by('title'),
-    #     widget=autocomplete.ModelSelect2(
-    #         url='/ajax/job-autocomplete',
-    #         attrs={
-    #             'class':'custom-select',
-    #         }
-    #     )
-    # )
 
     #This is the job autocomplete field
     job = forms.CharField(
@@ -37,7 +18,6 @@ class BestPlacesToWorkForm(forms.Form):
         widget=forms.TextInput(attrs={'hidden':True})
     )
 
-
     LOCATION_CHOICES = (
         ('state','State'),
         ('area','Metropolitan Area')
@@ -48,7 +28,6 @@ class BestPlacesToWorkForm(forms.Form):
         initial='state',
         widget=forms.RadioSelect(attrs={'class': 'custom-control-input'})
     )
-
 
     RENT_CHOICES = (
         ('total','All'),
@@ -98,17 +77,6 @@ class RentToIncomeRatioForm(forms.Form):
         initial='state',
         widget=forms.RadioSelect(attrs={'class':'custom-control-input'})
     )
-
-    # location = forms.ModelChoiceField(
-    #     queryset = Location.locations.all().order_by('name'),
-    #
-    #     widget=autocomplete.ModelSelect2(
-    #         url='/ajax/location-autocomplete',
-    #         attrs={
-    #             'class':'custom-select',
-    #         },
-    #         forward=['location_type'])
-    # )
 
     location = forms.CharField(
         widget=forms.TextInput(attrs={'class':'form-control'})

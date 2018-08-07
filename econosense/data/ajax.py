@@ -3,11 +3,38 @@ from django.http import HttpResponse,JsonResponse
 from django.db.models import F,Q
 from django.views import View
 
+from .forms import BestPlacesToWorkForm, RentToIncomeRatioForm
 from .models import Job, Location, State, Area
 
 import json
 
-from dal import autocomplete
+
+class DataTable(View):
+    def process_form(self):
+        pass
+
+
+class BestPlacesToWorkAjax(View):
+
+    def get(self,request):
+        form = BestPlacesToWorkForm(request.GET or None)
+
+        if form.is_valid():
+            pass
+
+    def process_form(self,form):
+        job             = form.cleaned_data['job_value']
+        location_type   = form.cleaned_data['location_type']
+        apartment       = form.cleaned_data['rent']
+        include_tax     = form.cleaned_data['include_tax']
+        include_tax     = include_tax and location_type == 'state'
+        filing_status   = form.cleaned_data['filing_status']
+
+
+
+
+
+
 
 class JQueryAutocomplete(View):
 
@@ -106,134 +133,3 @@ class LocationAutocomplete(JQueryAutocomplete):
             qs = qs.filter(starts_with | initials)
 
         return qs
-
-
-
-
-
-
-def jobs(request):
-    try:
-        term = request.GET['term']
-    except:
-        return HttpResponse(status=400)
-
-    qs = Job.jobs.detailed_jobs().order_by('title')
-
-    print(request.is_ajax())
-
-    qs = qs.filter(title__icontains=term)
-    qs = qs[:10]
-
-    return HttpResponse(qs_to_json('title','id',qs))
-
-
-def locations(request):
-    try:
-        term            = request.GET['term']
-        location_type   = request.GET['location_type']
-    except:
-        return HttpResponse(status=400)
-
-    if location_type == 'state':
-        qs = State.states.states_and_pr()
-
-    elif location_type == 'area':
-        qs = Area.areas.default()
-
-    qs = qs.filter(name__icontains=term)
-    qs = qs.order_by('name')
-    qs = qs[:10]
-
-    return HttpResponse(qs_to_json('name','id',qs))
-
-
-def qs_to_json(label,value,qs):
-    qs = qs.annotate(label=F(label),value=F(value))
-    result = list(qs.values('label','value'))
-    return json.dumps(result)
-
-
-# class JobAutocomplete(autocomplete.Select2QuerySetView):
-#
-#     def get_queryset(self):
-#         # Don't forget to filter out results depending on the visitor !
-#         # if not self.request.user.is_authenticated:
-#         #     return Job.objects.none()
-#
-#         qs = Job.jobs.detailed_jobs().order_by('title')
-#
-#         if self.q:
-#             qs = qs.filter(title__icontains=self.q)
-#
-#         return qs
-
-
-# class LocationAutocomplete(autocomplete.Select2QuerySetView):
-#
-#     def get_queryset(self):
-#         # Don't forget to filter out results depending on the visitor !
-#         # if not self.request.user.is_authenticated:
-#         #     return Job.objects.none()
-#
-#         qs = Location.locations.all()
-#
-#         location_type = self.forwarded.get('location_type',None)
-#
-#         if location_type == 'state':
-#             qs = State.states.states_and_pr().order_by('name')
-#
-#             #if there are only 2 characters in the query then check if there is
-#             # a match on the intiials
-#             if self.q:
-#                 starts_with = Q(name__istartswith=self.q) | Q(name__icontains=' ' + self.q)
-#                 initials = None
-#
-#                 if len(self.q) == 2:
-#                     initials = Q(initials__iexact=self.q)
-#
-#                 if initials is None:
-#                     qs = qs.filter(starts_with)
-#                 else:
-#                     qs = qs.filter(starts_with | initials)
-#
-#
-#         elif location_type == 'area':
-#             qs = Area.areas.default().order_by('name')
-#
-#             if self.q:
-#                 starts_with = Q(name__istartswith=self.q) | Q(name__icontains='-' + self.q)
-#                 initials = None
-#
-#                 if len(self.q) == 2:
-#                     initials = Q(name__contains=self.q.upper())
-#
-#                 if initials is None:
-#                     qs = qs.filter(starts_with)
-#                 else:
-#                     qs = qs.filter(starts_with | initials)
-#
-#         return qs
-#
-#
-# class RentAutocompleteFromList(autocomplete.Select2ListView):
-#
-#     mappings =  {
-#         'total':'All',
-#         'no':'Studio',
-#         'one':'1 bedroom',
-#         'two':'2 bedrooms',
-#         'three':'3 bedrooms',
-#         'four':'4 bedrooms',
-#         'five':'5 or more Bedrooms',
-#     }
-#
-#     def get_list(self):
-#         return ['All','Studio','1 bedroom','2 bedroom','3 bedroom','4 bedroom','5 or more bedrooms']
-#         #return ['total','no','one','two','three','four','five']
-#
-#     def get_result_label(self, item):
-#         return item
-#
-#     def get_selected_result_label(self, item):
-#         return self.mappings[item]

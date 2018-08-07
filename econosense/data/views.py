@@ -33,7 +33,6 @@ class BestPlacesToWorkView(FormView):
 
 
     def calculate_best_place_to_work(self,form):
-        # job             = form.cleaned_data['job']
         job             = form.cleaned_data['job_value']
         location_type   = form.cleaned_data['location_type']
         apartment       = form.cleaned_data['rent']
@@ -261,8 +260,3 @@ class RentToIncomeRatioView(FormView):
         good_jobs = format_df(good_jobs,"Jobs that can afford rent")
 
         return {'good_jobs':good_jobs,'bad_jobs':bad_jobs}
-
-
-def data_table_test(request):
-    context = None
-    return render(request,'data_table_test.html',context)
