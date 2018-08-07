@@ -38,6 +38,8 @@ class OesBuild(Build):
         self.locations = None
         self.last_location = {'id':None,'geo_id':None}
 
+        self.println('-- Begin OES Build --',space_before=True,space_after=True)
+
     def get_data(self,table):
 
         working_directory = self.download_path

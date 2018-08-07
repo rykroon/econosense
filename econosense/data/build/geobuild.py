@@ -33,6 +33,8 @@ class GeoBuild(Build):
         self.areas = None
         self.combined_areas = None
 
+        self.println('-- Begin GEO Build --',space_before=True,space_after=True)
+
 
     def cache_area_ids(self):
         self.areas = list(Area.objects.filter(year=self.year).values('id','geo_id'))
@@ -251,6 +253,8 @@ class GeoBuild(Build):
 
         print('\n')
         print('Building Regions and Divisions')
+        print('\n')
+
         self.create_regions_and_divisons()
         self.cache_regions()
         self.cache_divisions()

@@ -41,6 +41,7 @@ class AcsBuild(Build):
             'five_plus_bedrooms': '007E'
         }
 
+        self.println('-- Begin ACS Build --',space_before=True,space_after=True)
 
 
 
@@ -64,11 +65,10 @@ class AcsBuild(Build):
 
     def build_median_gross_rent(self,geo_key,geo_value):
         rents = dict()
-        print('Building rent data by ' + geo_key)
+        self.println('Building rent data by ' + geo_key)
         for var_key,var_value in self.median_gross_rent['variables'].items(): #each bedroom
 
             response = self.api.get(self.median_gross_rent['group'],var_value,geo_value)
-            print('Requesting data from ' + response.url)
 
             if response.status_code == 200:
 
@@ -112,10 +112,8 @@ class AcsBuild(Build):
             else:
                 print('There was an issue with URL: ' + response.url)
 
-        print('\n')
-
         rent_list = list(rents.values())
-        print('Inserting batch of ' + str(len(rent_list)) + ' records')
+        self.println('Inserting batch of ' + str(len(rent_list)) + ' records',space_after=True)
         Rent.objects.bulk_create(rent_list)
 
 

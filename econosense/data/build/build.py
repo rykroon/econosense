@@ -29,14 +29,12 @@ class Build(object):
     def create_dir(self,directory):
         try:
             os.mkdir(directory)
-            print('Created directory ' + directory)
-            print('\n')
+            self.println('Created directory ' + directory,space_after=True)
         except:
             pass
 
     def download(self,url,save_path):
-        print('Downloading data from ' + url + ' to ' + save_path)
-        print('\n')
+        self.println('Downloading data from ' + url + ' to ' + save_path,space_after=True)
 
         response = requests.get(url)
         with open(save_path,'wb') as f:
@@ -44,22 +42,26 @@ class Build(object):
 
 
     def unzip(self,zip_file,extract_to_path):
-        print('Extracting zip file ' + zip_file + ' to ' + extract_to_path)
-        print('\n')
+        self.println('Extracting zip file ' + zip_file + ' to ' + extract_to_path,space_after=True)
 
         zip_ref = zipfile.ZipFile(zip_file, 'r')
         zip_ref.extractall(extract_to_path)
         zip_ref.close()
 
     def load_file(self,file):
-        print('Loading data from ' + file)
-        print('\n')
+        self.println('Loading data from ' + file,space_after=True)
 
         if file.endswith('.csv'):
             return pd.read_csv(file)
 
         elif file.endswith('.xlsx'):
             return pd.read_excel(file)
+
+    def println(self,message,space_before=False,space_after=False):
+        if space_before:    print('\n')
+        print(message)
+        if space_after:    print('\n')
+
 
 
 
