@@ -27,11 +27,12 @@ class GeoBuild(Build):
         self.download_path = os.path.join(self.download_path,self.year)
         self.create_dir(self.download_path)
 
-        self.base_url = 'https://www2.census.gov/geo/tiger/TIGER' + self.year
-        self.geographies = ['STATE','CSA','CNECTA','CBSA','NECTA','METDIV','NECTADIV']
+        self.base_url       = 'https://www2.census.gov/geo/tiger/TIGER' + self.year
+        self.geographies    = ['STATE','CSA','CNECTA','CBSA','NECTA','METDIV','NECTADIV']
 
-        self.areas = None
+        self.areas          = None
         self.combined_areas = None
+        self.states         = None
 
         self.println('-- Begin GEO Build --',space_before=True,space_after=True)
 
@@ -68,6 +69,14 @@ class GeoBuild(Build):
         for region in self.regions:
             if region['geo_id'] == geo_id:
                 return region['id']
+
+    def cache_states(self):
+        self.states= list(State.objects.filter(year=self.year).values('id','initials'))
+
+    def get_state_id_by_initials(self,initials):
+        for state in self.states:
+            if state['initials'] == initials:
+                return state['id']
 
 
     def get_data(self,geo_type):
@@ -164,6 +173,13 @@ class GeoBuild(Build):
         area.latitude   = data.INTPTLAT
         area.longitude  = data.INTPTLON
 
+        #primary state
+        start = area.name.index(',') + 2
+        sub_string = area.name[start:]
+        initials = sub_string[:2]
+        area.primary_state_id = self.get_state_id_by_initials(initials)
+
+
         area.parent         = None
         area.combined_area  = None
 
@@ -259,6 +275,7 @@ class GeoBuild(Build):
         self.cache_regions()
         self.cache_divisions()
 
+
         for geo in self.geographies:
             print('Building data from geo directory ' + geo)
 
@@ -266,11 +283,15 @@ class GeoBuild(Build):
             print('Dataframe ' + geo + ' has ' + str(len(geo_frame.index)) + ' rows of data')
 
 
-            if geo in ['CBSA','NECTA'] and self.combined_areas == None:
+            if geo in ['CBSA','NECTA'] and self.combined_areas is None:
                 self.cache_combined_area_ids()
 
-            elif geo in ['METDIV','NECTADIV'] and self.areas == None:
+            elif geo in ['METDIV','NECTADIV'] and self.areas is None:
                 self.cache_area_ids()
+
+
+            if geo in ['CBSA','NECTA','METDIV','NECTADIV'] and self.states is None:
+                self.cache_states()
 
 
             for row in geo_frame.itertuples():

@@ -1,6 +1,6 @@
 import os
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q,F
 
 from data.models import *
 
@@ -17,21 +17,10 @@ class LocationQuerySet(models.QuerySet):
         return self.year().filter(lsad='ST')
 
 
-
-    def has_rent(self,apartment_type):
-        if apartment_type == 'total':   return self.has_total_rent()
-        elif apartment_type == 'one':   return self.has_one_bedroom()
-        elif apartment_type == 'two':   return self.has_two_bedroom()
-        elif apartment_type == 'three': return self.has_three_bedroom()
-        elif apartment_type == 'four':  return self.has_four_bedroom()
-        elif apartment_type == 'five':  return self.has_five_bedroom()
-
-    def has_total_rent(self):       return self.filter(rent__total__isnull=False)
-    def has_one_bedroom(self):      return self.filter(rent__one_bedroom__isnull=False)
-    def has_two_bedroom(self):      return self.filter(rent__two_bedroom__isnull=False)
-    def has_three_bedroom(self):    return self.filter(rent__three_bedroom__isnull=False)
-    def has_four_bedroom(self):     return self.filter(rent__four_bedroom__isnull=False)
-    def has_five_bedroom(self):     return self.filter(rent__five_bedroom__isnull=False)
+    def rent_is_not_null(self,apartment_type):
+        rent_field = 'rent__{}'.format(apartment_type)
+        qs = self.year().annotate(rent_field=F(rent_field))
+        return qs.filter(rent_field__isnull=False)
 
 
 class StateQuerySet(models.QuerySet):
@@ -44,23 +33,20 @@ class StateQuerySet(models.QuerySet):
     def territories(self):
         return self.year().filter(region__geo_id=9)
 
-    def states(self):
-        return self.year().filter(region__geo_id__in=[1,2,3,4])
+    def states(self,include_puerto_rico=False):
+        states = Q(region__geo_id__in=[1,2,3,4])
 
-    def states_and_pr(self):
-        return self.year().filter(Q(geo_id=72) | Q(region__geo_id__in=[1,2,3,4]))
+        if include_puerto_rico:
+            puerto_rico = Q(initials='PR')
+            return self.year().filter(states | puerto_rico)
 
-    def north_east(self):
-        return self.year().filter(region__geo_id=1)
+        return self.year().filter(states)
 
-    def mid_west(self):
-        return self.year().filter(region__geo_id=2)
 
-    def south(self):
-        return self.year().filter(region__geo_id=3)
-
-    def west(self):
-        return self.year().filter(region__geo_id=4)
+    def north_east(self):   return self.year().filter(region__geo_id=1)
+    def mid_west(self):     return self.year().filter(region__geo_id=2)
+    def south(self):        return self.year().filter(region__geo_id=3)
+    def west(self):         return self.year().filter(region__geo_id=4)
 
 
 
@@ -71,10 +57,16 @@ class AreaQuerySet(models.QuerySet):
         except: year = None
         return self.filter(year=year)
 
-    def default(self):
-        return self.year().ex_new_england_areas().ex_parents().ex_micros()
-        #return self.exclude_divisions()
+    def default(self,include_puerto_rico=False):
+        qs = self.year().ex_new_england_areas().ex_parents().ex_micros()
 
+        if not include_puerto_rico:
+            qs = qs.exclude(primary_state__initials='PR')
+
+        return qs
+
+
+    #exclude Metro areas and NECTAs that have divisions
     def ex_parents(self):
         parents =  self.year().filter(parent__isnull=False).values('parent').distinct()
         return self.year().exclude(id__in=parents)
@@ -82,12 +74,16 @@ class AreaQuerySet(models.QuerySet):
     #All New England Areas should exclusively be NECTA's (New England City and Town Areas)
     #Exclude New England Areas that are NOT NECTA's
     def ex_new_england_areas(self):
-        ne_areas = self.year().filter(
-            Q(name__contains='CT') | Q(name__contains='MA') |
-            Q(name__contains='ME') | Q(name__contains='NH') |
-            Q(name__contains='RI') | Q(name__contains='VT')
-        ).filter(lsad__in=['M1','M2','M3'])
-        return self.year().exclude(id__in=ne_areas)
+        # ne_areas = self.year().filter(
+        #     Q(name__contains='CT') | Q(name__contains='MA') |
+        #     Q(name__contains='ME') | Q(name__contains='NH') |
+        #     Q(name__contains='RI') | Q(name__contains='VT')
+        # ).filter(lsad__in=['M1','M2','M3'])
+
+        new_england_areas = self.year(
+            ).filter(primary_state__initials__in=['CT','MA','ME','NH','RI','VT']
+            ).filter(lsad__in=['M1','M2','M3'])
+        return self.year().exclude(id__in=new_england_areas)
 
 
     def ex_micros(self):        return self.year().exclude(lsad__in=['M2','M6'])
@@ -105,7 +101,7 @@ class AreaQuerySet(models.QuerySet):
 
 
 
-class JobQueryset(models.QuerySet):
+class JobQuerySet(models.QuerySet):
 
     def year(self):
         try:    year = os.environ['YEAR']
@@ -118,56 +114,57 @@ class JobQueryset(models.QuerySet):
     def detailed_jobs(self):    return self.year().filter(group='detailed')
 
 
+class JobLocationQuerySet2(models.QuerySet):
 
-# class JobLocationQuerySet(models.QuerySet):
-#     #add function that filters out bad median and jobs_1000
-#     def has_rent(self,rent_type):
-#         if rent_type == 'total':    return self.has_total_rent()
-#         elif rent_type == 'no':    return self.has_no_bedroom()
-#         elif rent_type == 'one':    return self.has_one_bedroom()
-#         elif rent_type == 'two':    return self.has_two_bedroom()
-#         elif rent_type == 'three':  return self.has_three_bedroom()
-#         elif rent_type == 'four':   return self.has_four_bedroom()
-#         elif rent_type == 'five':   return self.has_five_bedroom()
-#
-#     def has_total_rent(self):
-#         return self.filter(location__rent__total__isnull=False)
-#
-#     def has_no_bedroom(self):
-#         return self.filter(location__rent__no_bedroom__isnull=False)
-#
-#     def has_one_bedroom(self):
-#         return self.filter(location__rent__one_bedroom__isnull=False)
-#
-#     def has_two_bedroom(self):
-#         return self.filter(location__rent__two_bedroom__isnull=False)
-#
-#     def has_three_bedroom(self):
-#         return self.filter(location__rent__three_bedroom__isnull=False)
-#
-#     def has_four_bedroom(self):
-#         return self.filter(location__rent__four_bedroom__isnull=False)
-#
-#     def has_five_bedroom(self):
-#         return self.filter(location__rent__five_bedroom__isnull=False)
-#
-#     def by_state(self,include_puerto_rico=False):
-#         if include_puerto_rico:
-#             return self.filter(location__in=State.states.states_and_pr())
-#
-#         else:
-#             return self.filter(location__in=State.states.states())
-#
-#     def by_area(self):  return self.filter(location__in=Area.areas.default())
-#
-#     def by_location_type(self,location_type,include_puerto_rico=False):
-#         if location_type == 'state':    return self.by_state(include_puerto_rico)
-#         elif location_type == 'area':   return self.by_area()
-#
-#     def major_jobs(self):       return self.filter(job__group='major')
-#     def minor_jobs(self):       return self.filter(job__group='minor')
-#     def broad_jobs(self):       return self.filter(job__group='broad')
-#     def detailed_jobs(self):    return self.filter(job__group='detailed')
+    def year(self):
+        try:    year = os.environ['YEAR']
+        except: year = None
+        return self.filter(year=year)
+
+    # add function that filters out bad median and jobs_1000
+
+    #Filters outs locations with null rent
+    def rent_is_not_null(self,rent_type):
+        rent_field = 'location__rent__{}'.format(rent_type)
+        qs = self.year().annotate(rent_field=F(rent_field))
+        return qs.filter(rent_field__isnull=False)
+
+
+    #This function creates a "salary" column
+    def annotate_salary(self,salary,filing_status=None):
+        if filing_status is not None:
+            federal = '{}_gross__{}__federal_tax'.format(salary,filing_status)
+            fica    = '{}_gross__{}__fica_tax'.format(salary,filing_status)
+            state   = '{}_gross__{}__state_tax'.format(salary,filing_status)
+
+            return self.annotate(salary=F(salary) - F(federal) - F(fica) - F(state))
+
+        return self.annotate(salary=F(salary))
+
+
+    def by_state(self,include_puerto_rico=False):
+        states = Q(location__state__region__geo_id__in=[1,2,3,4])
+
+        if include_puerto_rico:
+            puerto_rico = Q(location__geo_id=72)
+            return self.year().filter(states | puerto_rico)
+
+        return self.year().filter(states)
+
+
+    def by_area(self):
+        pass
+        #return self.filter(location__in=Area.areas.default())
+
+    def by_location_type(self,location_type,include_puerto_rico=False):
+        if location_type == 'state':    return self.by_state(include_puerto_rico)
+        elif location_type == 'area':   return self.by_area()
+
+
+    def major_jobs(self):       return self.filter(job__group='major')
+    def minor_jobs(self):       return self.filter(job__group='minor')
+    def broad_jobs(self):       return self.filter(job__group='broad')
+    def detailed_jobs(self):    return self.filter(job__group='detailed')
 
 
 
@@ -178,19 +175,6 @@ class RentQuerySet(models.QuerySet):
         except: year = None
         return self.filter(year=year)
 
-    def apartment(self,apartment_type):
-        if apartment_type == 'total':   return self.total()
-        elif apartment_type == 'no':    return self.no_bedroom()
-        elif apartment_type == 'one':   return self.one_bedroom()
-        elif apartment_type == 'two':   return self.two_bedroom()
-        elif apartment_type == 'three': return self.three_bedroom()
-        elif apartment_type == 'four':  return self.four_bedroom()
-        elif apartment_type == 'five':  return self.five_bedroom()
-
-    def total(self):            return self.filter(total__isnull=False)
-    def no_bedroom(self):       return self.filter(no_bedroom__isnull=False)
-    def one_bedroom(self):      return self.filter(one_bedroom__isnull=False)
-    def two_bedroom(self):      return self.filter(two_bedroom__isnull=False)
-    def three_bedroom(self):    return self.filter(three_bedroom__isnull=False)
-    def four_bedroom(self):     return self.filter(four_bedroom__isnull=False)
-    def five_bedroom(self):     return self.filter(five_bedroom__isnull=False)
+    def rent_is_not_null(self,apartment_type):
+        qs = self.year().annotate(rent_field=F(apartment_type))
+        return qs.filter(rent_field__isnull=False)

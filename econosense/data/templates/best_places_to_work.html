@@ -175,7 +175,8 @@
       return false;
 
     }
-  }).focus(function(){
+  }).click(function(){
+    $(this).val("")
     $(this).autocomplete('search',$(this).val());
   });
 

@@ -69,6 +69,7 @@ class AcsBuild(Build):
         for var_key,var_value in self.median_gross_rent['variables'].items(): #each bedroom
 
             response = self.api.get(self.median_gross_rent['group'],var_value,geo_value)
+            print(response.url)
 
             if response.status_code == 200:
 

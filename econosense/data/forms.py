@@ -18,25 +18,25 @@ class BestPlacesToWorkForm(forms.Form):
         widget=forms.TextInput(attrs={'hidden':True})
     )
 
-    LOCATION_CHOICES = (
+    LOCATION_TYPE_CHOICES = (
         ('state','State'),
         ('area','Metropolitan Area')
     )
 
     location_type = forms.ChoiceField(
-        choices=LOCATION_CHOICES,
+        choices=LOCATION_TYPE_CHOICES,
         initial='state',
         widget=forms.RadioSelect(attrs={'class': 'custom-control-input'})
     )
 
     RENT_CHOICES = (
         ('total','All'),
-        ('no','Studio'),
-        ('one','1 bedroom'),
-        ('two','2 bedrooms'),
-        ('three','3 bedrooms'),
-        ('four','4 bedrooms'),
-        ('five','5 or more bedrooms'),
+        ('no_bedroom','Studio'),
+        ('one_bedroom','1 bedroom'),
+        ('two_bedroom','2 bedrooms'),
+        ('three_bedroom','3 bedrooms'),
+        ('four_bedroom','4 bedrooms'),
+        ('five_bedroom','5 or more bedrooms'),
     )
 
     rent = forms.ChoiceField(
@@ -91,12 +91,12 @@ class RentToIncomeRatioForm(forms.Form):
 
     RENT_CHOICES = (
         ('total','All'),
-        ('no','Studio'),
-        ('one','1 bedroom'),
-        ('two','2 bedrooms'),
-        ('three','3 bedrooms'),
-        ('four','4 bedrooms'),
-        ('five','5 or more Bedrooms'),
+        ('no_bedroom','Studio'),
+        ('one_bedroom','1 bedroom'),
+        ('two_bedroom','2 bedrooms'),
+        ('three_bedroom','3 bedrooms'),
+        ('four_bedroom','4 bedrooms'),
+        ('five_bedroom','5 or more Bedrooms'),
     )
 
     rent       = forms.ChoiceField(

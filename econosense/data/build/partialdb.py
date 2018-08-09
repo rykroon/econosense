@@ -62,7 +62,7 @@ class PartialDatabase():
 
     def skip_area(self,area):
         if self.PARTIAL_DATABASE:
-            if area.lsad not in ['M3','M7']:
+            if area.lsad not in ['M3','M7'] or area.primary_state_id in self.skipped_locations:
                 self.skipped_locations.append(area.id)
                 return True
 

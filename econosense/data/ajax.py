@@ -20,7 +20,9 @@ class BestPlacesToWorkAjax(View):
         form = BestPlacesToWorkForm(request.GET or None)
 
         if form.is_valid():
-            pass
+            self.process_form()
+        else:
+            return HttpResponse(status=400)
 
     def process_form(self,form):
         job             = form.cleaned_data['job_value']
@@ -29,6 +31,8 @@ class BestPlacesToWorkAjax(View):
         include_tax     = form.cleaned_data['include_tax']
         include_tax     = include_tax and location_type == 'state'
         filing_status   = form.cleaned_data['filing_status']
+
+        qs = JobLocation.job_locations()
 
 
 

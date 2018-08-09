@@ -35,52 +35,40 @@ class BestPlacesToWorkView(FormView):
     def calculate_best_place_to_work(self,form):
         job             = form.cleaned_data['job_value']
         location_type   = form.cleaned_data['location_type']
-        apartment       = form.cleaned_data['rent']
+        rent            = form.cleaned_data['rent']
         include_tax     = form.cleaned_data['include_tax']
-        include_tax     = include_tax and location_type == 'state'
         filing_status   = form.cleaned_data['filing_status']
 
-        for choice in form.fields['location_type'].choices:
-            if choice[0] == location_type: location_name = choice[1]
+
+        if not include_tax:
+            filing_status=None
 
         #
         ## Filter Data
         #
 
-        qs = JobLocation.job_locations.filter(
-            job=job).by_location_type(
-            location_type,include_puerto_rico=True).has_rent(
-            apartment).filter(
-            median__gte=0).filter(
-            jobs_1000__gte=0)
+
+        if location_type == 'state':
+            location_qs = State.states.states(include_puerto_rico=not include_tax)
+
+        elif location_type == 'area':
+            location_qs = Area.areas.default(include_puerto_rico=not include_tax)
+
+
+        qs = JobLocation.job_locations.filter(job=job
+            ).filter(location__in=location_qs
+            ).rent_is_not_null(rent
+            ).filter(median__gte=0
+            ).filter(jobs_1000__gte=0).annotate_salary('median',filing_status)
 
         #
         ## Convert Queryset into a Dataframe
         #
 
-        rent_col_name = 'location__rent__' + apartment
-        if apartment != 'total': rent_col_name += '_bedroom'
+        #the has_rent() function above creates a field "rent_field" which is the appropraite rent column
+        rent_col_name = 'rent_field'
 
-        field_names = ['jobs_1000','median','location__name',rent_col_name]
-
-        if include_tax:
-            federal_col_name = 'median_gross__{}__federal_tax'.format(filing_status)
-            fica_col_name = 'median_gross__{}__fica_tax'.format(filing_status)
-            state_col_name = 'median_gross__{}__state_tax'.format(filing_status)
-
-            field_names.append(federal_col_name)
-            field_names.append(fica_col_name)
-            field_names.append(state_col_name)
-
-            print(federal_col_name)
-            print(fica_col_name)
-            print(state_col_name)
-
-
-
-        if location_type == 'state':
-            field_names.append('location__state__initials')
-
+        field_names = ['jobs_1000','salary','location__name',rent_col_name]
 
         df = read_frame(
             qs,
@@ -88,13 +76,9 @@ class BestPlacesToWorkView(FormView):
             verbose=True,
             coerce_float=True)
 
-        if include_tax:
-            df['median'] = df['median'] - df[federal_col_name] - df[fica_col_name] - df[state_col_name]
-
-
         #Calculate score
         df['score'] = 100 * (
-            (.3 * self.normalize(df['median'])) +
+            (.3 * self.normalize(df['salary'])) +
             (.4 * self.normalize(df['jobs_1000'])) +
             (.3 * (1 - self.normalize(df[rent_col_name]))))
 
@@ -105,13 +89,18 @@ class BestPlacesToWorkView(FormView):
         df['rank'] = df.index
 
         #Re-order columns
-        df = df[['rank','location__name','jobs_1000','median',rent_col_name,'score']]
+        df = df[['rank','location__name','jobs_1000','salary',rent_col_name,'score']]
+
+        #Get the verbose location type ("State" or "Metropolitan Area")
+        for choice in form.fields['location_type'].choices:
+            if choice[0] == location_type:
+                location_name = choice[1]
 
         #Rename columns
         df = df.rename(
             columns={
                 'rank'              : 'Rank',
-                'median'            : 'Salary',
+                'salary'            : 'Salary',
                 rent_col_name       : 'Rent',
                 'jobs_1000'         : 'Employment per 1000 jobs',
                 'location__name'    : location_name,
@@ -140,6 +129,7 @@ class BestPlacesToWorkView(FormView):
 
 
         #Format output
+        print(df['Salary'])
         df['Salary']    = df['Salary'].map('${:,.0f}'.format)
         df['Rent']      = df['Rent'].map('${:,.0f}'.format)
         df['Score']     = df['Score'].map('{:,.2f}'.format)
@@ -182,26 +172,26 @@ class RentToIncomeRatioView(FormView):
 
 
     def calculate_rent_to_income_ratio(self,form):
-        location_type = form.cleaned_data['location_type']
-        location = form.cleaned_data['location_value']
-        apartment = form.cleaned_data['rent']
+        location_type   = form.cleaned_data['location_type']
+        location        = form.cleaned_data['location_value']
+        rent            = form.cleaned_data['rent']
 
-        rent_column_name = 'location__rent__' + apartment
-        if apartment != 'total':
-            rent_column_name = 'location__rent__' + apartment + '_bedroom'
+        rent_column_name = 'rent_field'
+        #rent_column_name = 'location__rent__' + apartment
+        #if apartment != 'total':
+        #    rent_column_name = 'location__rent__' + apartment + '_bedroom'
 
 
         qs = JobLocation.job_locations.filter(
             location=location).filter(
             median__gte=0).filter(
-            jobs_1000__gte=0).has_rent(
-            apartment).detailed_jobs()#.annotate(ratio=ExpressionWrapper(F(rent_column_name) * 12 / F('median') * 100, output_field=FloatField())).order_by('ratio')
-
+            jobs_1000__gte=0).rent_is_not_null(
+            rent).detailed_jobs()
 
         field_names = ['job__title',rent_column_name,'median']
-        #field_names = ['job__title',rent_column_name,'median','ratio']
-        if location_type == 'state':
-            field_names.append('location__state__initials')
+
+        #if location_type == 'state':
+        #    field_names.append('location__state__initials')
 
 
         df = read_frame(

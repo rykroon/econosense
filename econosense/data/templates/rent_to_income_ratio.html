@@ -160,9 +160,9 @@
         $('#id_location_value').val('');
       }
       return false;
-
     }
-  }).focus(function(){
+  }).click(function(){
+    $(this).val("")
     $(this).autocomplete('search',$(this).val());
   });
 

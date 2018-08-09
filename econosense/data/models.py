@@ -87,7 +87,7 @@ class CombinedArea(Location):
 
 
 class Area(Location):
-    #add primary state
+    primary_state   = models.ForeignKey('State',on_delete=models.CASCADE)
     parent          = models.ForeignKey("self",on_delete=models.CASCADE,null=True)
     combined_area   = models.ForeignKey("CombinedArea",on_delete=models.CASCADE,null=True)
 
@@ -111,7 +111,7 @@ class Job(models.Model):
     parent      = models.ForeignKey("self",on_delete=models.CASCADE,null=True)
 
     objects = models.Manager()
-    jobs = JobQueryset.as_manager()
+    jobs    = JobQuerySet.as_manager()
 
     class Meta:
         db_table = 'job'
@@ -195,7 +195,7 @@ class JobLocation(models.Model):
     pct_90_gross    = models.ForeignKey('Gross',on_delete=models.CASCADE,related_name='pct_90',null=True)
 
     objects = models.Manager()
-    job_locations = JobLocationQuerySet.as_manager()
+    job_locations = JobLocationQuerySet2.as_manager()
 
     class Meta:
         unique_together = ('job','location','year')
@@ -336,32 +336,3 @@ class Rent(models.Model):
 
     def __str__(self):
         return self.location.lsad_name + ' Rent'
-
-
-# class Income(models.Model):
-#     #id              = models.IntegerField(primary_key=True)
-#     year            = models.IntegerField()
-#     gross           = models.DecimalField(max_digits=8, decimal_places=2)
-#
-#     FILING_STATUS_CHOICES = (
-#         ('single','Single'),
-#         ('married','Married'),
-#         ('married_separately','Married seperately'),
-#         ('head_of_household','Head of household')
-#     )
-#
-#     filing_status   = models.CharField(max_length=20,choices=FILING_STATUS_CHOICES)
-#
-#     state           = models.ForeignKey('State',on_delete=models.CASCADE,null=False)
-#     fica            = models.DecimalField(max_digits=8, decimal_places=2)
-#     federal_tax     = models.DecimalField(max_digits=8, decimal_places=2)
-#     state_tax       = models.DecimalField(max_digits=8, decimal_places=2)
-#     net             = models.DecimalField(max_digits=8, decimal_places=2)
-#
-#
-#     class Meta:
-#         unique_together = ('year','filing_status','gross','state')
-#         db_table = 'income'
-#
-#     def __str__(self):
-#         return 'Filing as ' + self.filing_status + ' in ' + self.state.name + ' for the ' + str(self.year) + ' Tax year.'
