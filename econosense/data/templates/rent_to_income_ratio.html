@@ -47,37 +47,49 @@
         </div>
       </div> <!-- form-row -->
 
-      <!-- Apartment -->
-      <div class='form-row'>
-        <div class='col-12 col-md-4'>
-          <div class='form-group'>
-            <label for='{{ form.rent.id_for_label }}'> {{ form.rent.label }} </label>
-            {{ form.rent }}
-          </div> <!-- form-group -->
-        </div>
-      </div> <!-- form-row -->
+      <a class="" style="text-decoration:none" data-toggle="collapse" href="#advanced_settings">
+   Advanced Settings
+      </a>
 
-      <!-- Include Tax -->
-      <div class='form-row'>
-        <div class='col-12'>
-          <div class='form-group'>
+      <div class='row my-3'>
+        <div class=col-12>
+          <div id="advanced_settings" class="collapse">
 
-            <div class='custom-control custom-checkbox'>
-              {{ form.include_tax }}
-              <label class='custom-control-label' for='{{ form.include_tax.id_for_label }}'> {{ form.include_tax.label }} </label>
+            <!-- Apartment -->
+            <div class='form-row'>
+              <div class='col-12 col-md-4'>
+                <div class='form-group'>
+                  <label for='{{ form.rent.id_for_label }}'> {{ form.rent.label }} </label>
+                  {{ form.rent }}
+                </div> <!-- form-group -->
+              </div>
+            </div> <!-- form-row -->
+
+            <!-- Include Tax -->
+            <div class='form-row'>
+              <div class='col-12'>
+                <div class='form-group'>
+
+                  <div class='custom-control custom-checkbox'>
+                    {{ form.include_tax }}
+                    <label class='custom-control-label' for='{{ form.include_tax.id_for_label }}'> {{ form.include_tax.label }} </label>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+            <!-- /Include Tax -->
+
+            <!-- Filing Status  -->
+            <div class='form-row'>
+              <div class='col-12  col-md-4'>
+                <div class='form-group'>
+                  <label for='{{ form.filing_status.id_for_label }}'> {{ form.filing_status.label }} </label>
+                  {{ form.filing_status }}
+                </div>
+              </div>
             </div>
 
-          </div>
-        </div>
-      </div>
-      <!-- /Include Tax -->
-
-      <!-- Filing Status  -->
-      <div class='form-row'>
-        <div class='col-12  col-md-4'>
-          <div class='form-group'>
-            <label for='{{ form.filing_status.id_for_label }}'> {{ form.filing_status.label }} </label>
-            {{ form.filing_status }}
           </div>
         </div>
       </div>
@@ -110,34 +122,6 @@
           </tr>
         </thead>
 
-        <!-- <caption style="caption-side: top;">{{table_one.title}}</caption> -->
-        <!-- <thead class='thead-light'>
-          <tr>
-            {% for col_name,class,tool_tip in table_one.header %}
-            <th class='{{class}}' data-toggle="tooltip" data-placement="top" title="{{tool_tip}}">{{ col_name }}</th>
-            {% endfor %}
-          </tr>
-        </thead>
-
-        <tbody>
-
-          {% for index,rank,job,rent,salary,ratio in table_one.data.itertuples %}
-          <tr>
-
-            <td class="text-right">{{ rank }}</td>
-            <td class="text-left">{{ job }}</td>
-            <td class="text-right">{{ rent }}</td>
-            {% if salary == '$999,999.99' %}
-            <td class="text-right">> $208,000.00</td> <! check field_description.xlsx for max salary>
-            <td class="text-right">-</td>
-            {% else %}
-            <td class="text-right">{{ salary }}</td>
-            <td class="text-right">{{ ratio }}</td>
-            {% endif %}
-
-          </tr>
-          {% endfor %}
-        </tbody> -->
       </table>
     </div>
 
@@ -232,7 +216,10 @@
     //Initialize tooltips
     $(function () {
       $('[data-toggle="tooltip"]').tooltip();
-    })
+    });
+
+    //Initalize collapse
+    $('.collapse').collapse("hide");
 
     //Toggle filing_status dropdown
     $('#id_include_tax').click(function(){

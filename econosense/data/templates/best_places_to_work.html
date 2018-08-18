@@ -46,38 +46,50 @@
       </div>
       <!-- /location type -->
 
-      <!-- Rent  -->
-      <div class='form-row'>
-        <div class='col-12 col-md-4'>
-          <div class='form-group'>
-            <label for='{{ form.rent.id_for_label }}'> {{ form.rent.label }} </label>
-            {{ form.rent }}
-          </div>
-        </div>
-      </div>
+      <a class="" style="text-decoration:none" data-toggle="collapse" href="#advanced_settings">
+   Advanced Settings
+      </a>
 
-
-      <!-- Include Tax -->
-      <div class='form-row'>
+      <div class='row my-3'>
         <div class='col-12'>
-          <div class='form-group'>
+          <div id= 'advanced_settings' class='collapse'>
 
-            <div class='custom-control custom-checkbox'>
-              {{ form.include_tax }}
-              <label class='custom-control-label' for='{{ form.include_tax.id_for_label }}'> {{ form.include_tax.label }} </label>
+            <!-- Rent  -->
+            <div class='form-row'>
+              <div class='col-12 col-md-4'>
+                <div class='form-group'>
+                  <label for='{{ form.rent.id_for_label }}'> {{ form.rent.label }} </label>
+                  {{ form.rent }}
+                </div>
+              </div>
             </div>
 
-          </div>
-        </div>
-      </div>
-      <!-- /Include Tax -->
 
-      <!-- Filing Status  -->
-      <div class='form-row'>
-        <div class='col-12  col-md-4'>
-          <div class='form-group'>
-            <label for='{{ form.filing_status.id_for_label }}'> {{ form.filing_status.label }} </label>
-            {{ form.filing_status }}
+            <!-- Include Tax -->
+            <div class='form-row'>
+              <div class='col-12'>
+                <div class='form-group'>
+
+                  <div class='custom-control custom-checkbox'>
+                    {{ form.include_tax }}
+                    <label class='custom-control-label' for='{{ form.include_tax.id_for_label }}'> {{ form.include_tax.label }} </label>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+            <!-- /Include Tax -->
+
+            <!-- Filing Status  -->
+            <div class='form-row'>
+              <div class='col-12  col-md-4'>
+                <div class='form-group'>
+                  <label for='{{ form.filing_status.id_for_label }}'> {{ form.filing_status.label }} </label>
+                  {{ form.filing_status }}
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
@@ -125,6 +137,14 @@
 {% load static %}
 <script>
   $(document).ready(function(){
+
+    //initialize tooltips
+    $(function () {
+      $('[data-toggle="tooltip"]').tooltip()
+    });
+
+    //Initalize collapse
+    $('.collapse').collapse("hide");
 
 
     //Autocomplete field
@@ -197,12 +217,6 @@
      event.preventDefault();
      url = '/ajax/best-places-to-work?' + $(this).serialize()
      data_table.ajax.url(url).load();
-    });
-
-
-    //initialize tooltips
-    $(function () {
-      $('[data-toggle="tooltip"]').tooltip()
     });
 
 
