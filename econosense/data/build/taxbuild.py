@@ -53,8 +53,9 @@ class TaxBuild(Build):
     def build(self):
         self.refresh()
 
-        states = State.objects.filter(year=self.year).exclude(region__geo_id=9)
-        qs = JobLocation.objects.filter(year=self.year).filter(location_id__in=states).filter(median__gt=0).filter(median__lt=999999)
+        states  = State.objects.filter(year=self.year).exclude(region__geo_id=9)
+        #areas   = Area.objects.filter(year=self.year).exclude(primary_state__initials='PR')
+        qs      = JobLocation.objects.filter(year=self.year).filter(location_id__in=states).filter(median__gt=0).filter(median__lt=999999)
 
         qs = qs.values('year','location','location__state__initials','median').distinct()
         qs_len = len(qs)
@@ -96,6 +97,9 @@ class TaxBuild(Build):
                     self.println("Inserting batch of {} Gross objects".format(len(gross_list)),space_after=True)
 
                     Gross.objects.bulk_create(gross_list)
+
+#potential query for updating job_locations with metropolitan areas
+#select a.location_id, b.primary_state_id, a.median,c.amount from job_location as a join area as b on a.location_id = b.location_ptr_id join gross as c on a.median = c.amount and b.primary_state_id =c.state_id;
 
                 with django.db.connection.cursor() as cursor:
                     sql = "update job_location set median_gross_id = gross.id from gross where job_location.year=gross.year and job_location.location_id=gross.state_id and job_location.median=gross.amount;"

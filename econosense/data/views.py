@@ -47,7 +47,6 @@ class BestPlacesToWorkView(FormView):
         ## Filter Data
         #
 
-
         if location_type == 'state':
             location_qs = State.states.states(include_puerto_rico=not include_tax)
 
@@ -57,18 +56,16 @@ class BestPlacesToWorkView(FormView):
 
         qs = JobLocation.job_locations.filter(job=job
             ).filter(location__in=location_qs
-            ).rent_is_not_null(rent
             ).filter(median__gte=0
-            ).filter(jobs_1000__gte=0).annotate_salary('median',filing_status)
+            ).filter(jobs_1000__gte=0
+            ).annotate_salary('median',filing_status
+            ).annotate_rent(rent)
 
         #
         ## Convert Queryset into a Dataframe
         #
 
-        #the has_rent() function above creates a field "rent_field" which is the appropraite rent column
-        rent_col_name = 'rent_field'
-
-        field_names = ['jobs_1000','salary','location__name',rent_col_name]
+        field_names = ['jobs_1000','salary','location__name','rent']
 
         df = read_frame(
             qs,
@@ -80,7 +77,7 @@ class BestPlacesToWorkView(FormView):
         df['score'] = 100 * (
             (.3 * self.normalize(df['salary'])) +
             (.4 * self.normalize(df['jobs_1000'])) +
-            (.3 * (1 - self.normalize(df[rent_col_name]))))
+            (.3 * (1 - self.normalize(df['rent']))))
 
 
         #Sort by Score and add indexes
@@ -89,7 +86,7 @@ class BestPlacesToWorkView(FormView):
         df['rank'] = df.index
 
         #Re-order columns
-        df = df[['rank','location__name','jobs_1000','salary',rent_col_name,'score']]
+        df = df[['rank','location__name','jobs_1000','salary','rent','score']]
 
         #Get the verbose location type ("State" or "Metropolitan Area")
         for choice in form.fields['location_type'].choices:
@@ -101,7 +98,7 @@ class BestPlacesToWorkView(FormView):
             columns={
                 'rank'              : 'Rank',
                 'salary'            : 'Salary',
-                rent_col_name       : 'Rent',
+                'rent'              : 'Rent',
                 'jobs_1000'         : 'Employment per 1000 jobs',
                 'location__name'    : location_name,
                 'score'             : 'Score'

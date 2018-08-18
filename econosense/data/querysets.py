@@ -74,15 +74,10 @@ class AreaQuerySet(models.QuerySet):
     #All New England Areas should exclusively be NECTA's (New England City and Town Areas)
     #Exclude New England Areas that are NOT NECTA's
     def ex_new_england_areas(self):
-        # ne_areas = self.year().filter(
-        #     Q(name__contains='CT') | Q(name__contains='MA') |
-        #     Q(name__contains='ME') | Q(name__contains='NH') |
-        #     Q(name__contains='RI') | Q(name__contains='VT')
-        # ).filter(lsad__in=['M1','M2','M3'])
-
         new_england_areas = self.year(
             ).filter(primary_state__initials__in=['CT','MA','ME','NH','RI','VT']
             ).filter(lsad__in=['M1','M2','M3'])
+
         return self.year().exclude(id__in=new_england_areas)
 
 
@@ -114,7 +109,7 @@ class JobQuerySet(models.QuerySet):
     def detailed_jobs(self):    return self.year().filter(group='detailed')
 
 
-class JobLocationQuerySet2(models.QuerySet):
+class JobLocationQuerySet(models.QuerySet):
 
     def year(self):
         try:    year = os.environ['YEAR']
@@ -124,10 +119,11 @@ class JobLocationQuerySet2(models.QuerySet):
     # add function that filters out bad median and jobs_1000
 
     #Filters outs locations with null rent
-    def rent_is_not_null(self,rent_type):
-        rent_field = 'location__rent__{}'.format(rent_type)
-        qs = self.year().annotate(rent_field=F(rent_field))
-        return qs.filter(rent_field__isnull=False)
+    #def rent_is_not_null(self,rent_type):
+    def annotate_rent(self,rent_type):
+        rent = 'location__rent__{}'.format(rent_type)
+        qs = self.annotate(rent=F(rent))
+        return qs.filter(rent__isnull=False)
 
 
     #This function creates a "salary" column
@@ -137,7 +133,9 @@ class JobLocationQuerySet2(models.QuerySet):
             fica    = '{}_gross__{}__fica_tax'.format(salary,filing_status)
             state   = '{}_gross__{}__state_tax'.format(salary,filing_status)
 
-            return self.annotate(salary=F(salary) - F(federal) - F(fica) - F(state))
+            qs = self.annotate(salary=F(salary) - F(federal) - F(fica) - F(state))
+            qs = qs.filter(salary__isnull=False)
+            return qs
 
         return self.annotate(salary=F(salary))
 

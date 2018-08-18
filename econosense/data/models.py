@@ -121,58 +121,6 @@ class Job(models.Model):
         return self.title
 
 
-class JobLocationQuerySet(models.QuerySet):
-
-    #add function that filters out bad median and jobs_1000
-    def has_rent(self,rent_type):
-        if rent_type == 'total':    return self.has_total_rent()
-        elif rent_type == 'no':    return self.has_no_bedroom()
-        elif rent_type == 'one':    return self.has_one_bedroom()
-        elif rent_type == 'two':    return self.has_two_bedroom()
-        elif rent_type == 'three':  return self.has_three_bedroom()
-        elif rent_type == 'four':   return self.has_four_bedroom()
-        elif rent_type == 'five':   return self.has_five_bedroom()
-
-    def has_total_rent(self):
-        return self.filter(location__rent__total__isnull=False)
-
-    def has_no_bedroom(self):
-        return self.filter(location__rent__no_bedroom__isnull=False)
-
-    def has_one_bedroom(self):
-        return self.filter(location__rent__one_bedroom__isnull=False)
-
-    def has_two_bedroom(self):
-        return self.filter(location__rent__two_bedroom__isnull=False)
-
-    def has_three_bedroom(self):
-        return self.filter(location__rent__three_bedroom__isnull=False)
-
-    def has_four_bedroom(self):
-        return self.filter(location__rent__four_bedroom__isnull=False)
-
-    def has_five_bedroom(self):
-        return self.filter(location__rent__five_bedroom__isnull=False)
-
-    def by_state(self,include_puerto_rico=False):
-        if include_puerto_rico:
-            return self.filter(location__in=State.states.states_and_pr())
-
-        else:
-            return self.filter(location__in=State.states.states())
-
-    def by_area(self):  return self.filter(location__in=Area.areas.default())
-
-    def by_location_type(self,location_type,include_puerto_rico=False):
-        if location_type == 'state':    return self.by_state(include_puerto_rico)
-        elif location_type == 'area':   return self.by_area()
-
-    def major_jobs(self):       return self.filter(job__group='major')
-    def minor_jobs(self):       return self.filter(job__group='minor')
-    def broad_jobs(self):       return self.filter(job__group='broad')
-    def detailed_jobs(self):    return self.filter(job__group='detailed')
-
-
 
 class JobLocation(models.Model):
     job             = models.ForeignKey('Job',on_delete=models.CASCADE,null=False)
@@ -195,7 +143,7 @@ class JobLocation(models.Model):
     pct_90_gross    = models.ForeignKey('Gross',on_delete=models.CASCADE,related_name='pct_90',null=True)
 
     objects = models.Manager()
-    job_locations = JobLocationQuerySet2.as_manager()
+    job_locations = JobLocationQuerySet.as_manager()
 
     class Meta:
         unique_together = ('job','location','year')

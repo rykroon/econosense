@@ -119,14 +119,16 @@
   }
 
   function get_location_type(){
-    if ($('#id_location_type_0').is(':checked')){
-      return $('#id_location_type_0').val();
-    } else if ($('#id_location_type_1').is(':checked')){
-      return $('#id_location_type_1').val();
-    }
+    return $('input[name=location_type]:checked').val()
   }
 
+  $('input[name=location_type]').click(function(){
+    $('#id_location').val('');
+    $('#id_location_value').val('');
+  });
 
+
+//autocomplete
   $('#id_location').autocomplete({
     //source: "/ajax/jobs"
     minLength: 0,
@@ -165,6 +167,20 @@
     $(this).val("")
     $(this).autocomplete('search',$(this).val());
   });
+
+
+  //tooltips
+  $(function () {
+    $('[data-toggle="tooltip"]').tooltip()
+  })
+
+
+  // Data dataTables
+  $(document).ready( function () {
+      $('#result-table').DataTable({
+        "pageLength":50
+      });
+  } );
 
 
   // Example starter JavaScript for disabling form submissions if there are invalid fields

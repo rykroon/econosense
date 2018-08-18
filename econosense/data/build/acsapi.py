@@ -48,39 +48,36 @@ class AcsApi():
             #return requests.get(url,params=self.params)
             return self.session.get(url,params=self.params)
 
-        elif type(variable) == dict:
-            result = dict()
+        # elif type(variable) == dict:
+        #     result = dict()
+        #
+        #     for key,value in variable.items():
+        #         self.params['get'] = group + '_' + var
+        #         self.params['for'] = geography + ':*'
+        #
+        #         #result[key] = requests.get(url,params=self.params)
+        #         result[key] = self.session.get(url,params=self.params)
+        #
+        #     return result
 
-            for key,value in variable.items():
-                self.params['get'] = group + '_' + var
-                self.params['for'] = geography + ':*'
+    #Median Gross Rent
+    def get_median_gross_rent(self,geography,num_of_bedrooms=None,year=None):
+        group = 'B25031'
 
-                #result[key] = requests.get(url,params=self.params)
-                result[key] = self.session.get(url,params=self.params)
+        variables = {
+            None    : '001E', #Total
+            0       : '002E', #No Bedroom
+            1       : '003E', #1 Bedroom
+            2       : '004E', #2 Bedroom
+            3       : '005E', #3 Bedroom
+            4       : '006E', #4 Bedroom
+            5       : '007E' #5 or More Bedrooms
+        }
 
-            return result
+        var = variables[num_of_bedrooms]
+        geo = self.geographies[geography]
 
-        #Median Gross Rent
-        def get_median_gross_rent(self,geography,num_of_bedrooms=None,year=None):
-            group = 'B25031'
+        if year is None:
+            year = self.year
 
-            variables = {
-                None    : '001E', #Total
-                0       : '002E', #No Bedroom
-                1       : '003E', #1 Bedroom
-                2       : '004E', #2 Bedroom
-                3       : '005E', #3 Bedroom
-                4       : '006E', #4 Bedroom
-                5       : '007E' #5 or More Bedrooms
-            }
-
-            var = variables[num_of_bedrooms]
-            geo = self.geographies[geography]
-
-            if year is None:
-                year = self.year
-
-            response = self.get(group,var,geo,year)
-
-            if response.status_code == 200:
-                result = response.json()
+        return self.get(group,var,geo,year)
