@@ -16,7 +16,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from data.views import BestPlacesToWorkView,RentToIncomeRatioView
-from data.ajax import JobAutocomplete,LocationAutocomplete,BestPlacesToWorkAjax
+from data.ajax import JobAutocomplete,LocationAutocomplete,BestPlacesToWorkAjax,RentToIncomeRatioAjax
 from main.views import home
 
 urlpatterns = [
@@ -27,5 +27,6 @@ urlpatterns = [
     #path('data-table-test/',data_table_test),
     path('ajax/jobs/',JobAutocomplete.as_view()),
     path('ajax/locations/',LocationAutocomplete.as_view()),
-    path('ajax/best-places-to-work',BestPlacesToWorkAjax.as_view())
+    path('ajax/best-places-to-work',BestPlacesToWorkAjax.as_view()),
+    path('ajax/rent-to-income-ratio',RentToIncomeRatioAjax.as_view())
 ]

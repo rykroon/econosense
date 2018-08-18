@@ -90,7 +90,41 @@ class RentToIncomeRatioAjax(View):
 
 
     def process_form(self,form):
-        pass
+        location_type   = form.cleaned_data['location_type']
+        location        = form.cleaned_data['location_value']
+        rent            = form.cleaned_data['rent']
+        include_tax     = form.cleaned_data['include_tax']
+        filing_status   = form.cleaned_data['filing_status']
+
+        if not include_tax:
+            filing_status = None
+
+        qs = JobLocation.job_locations.filter(location=location
+            ).filter(median__gte=0
+            ).filter(jobs_1000__gte=0
+            ).annotate_salary('median',filing_status
+            ).annotate_rent(rent
+            ).detailed_jobs()
+
+        field_names = ['job','rent','salary']
+
+        df = read_frame(qs,fieldnames = field_names,verbose=True,coerce_float=True)
+
+        df['ratio'] = (df['rent'] * 12) / df['salary'] * 100
+
+        df = df.sort_values(by='ratio',ascending=True)
+
+        df.index = pd.Series(range(1,len(df) + 1))
+        df['rank'] = df.index
+
+        df = df[['rank','job','rent','salary','ratio']]
+
+        df['ratio']     = df['ratio'].map('{:,.2f}'.format)
+        df['rent']      = df['rent'].map('${:,.2f}'.format)
+        df['salary']    = df['salary'].map('${:,.2f}'.format)
+
+        result = json.dumps(df.to_dict(orient='record'))
+        return result
 
 
 
@@ -138,7 +172,9 @@ class JobAutocomplete(JQueryAutocomplete):
 
         qs = Job.jobs.detailed_jobs().order_by('title')
         if self.term is not None:
-            qs = qs.filter(title__icontains=self.term)
+            starts_with  = Q(title__istartswith=self.term)
+            contains    = Q(title__icontains=' ' + self.term)
+            qs = qs.filter(starts_with | contains)
 
         return qs
 

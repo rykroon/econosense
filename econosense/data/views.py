@@ -173,7 +173,7 @@ class RentToIncomeRatioView(FormView):
         location        = form.cleaned_data['location_value']
         rent            = form.cleaned_data['rent']
 
-        rent_column_name = 'rent_field'
+        #rent_column_name = 'rent_field'
         #rent_column_name = 'location__rent__' + apartment
         #if apartment != 'total':
         #    rent_column_name = 'location__rent__' + apartment + '_bedroom'
@@ -182,10 +182,10 @@ class RentToIncomeRatioView(FormView):
         qs = JobLocation.job_locations.filter(
             location=location).filter(
             median__gte=0).filter(
-            jobs_1000__gte=0).rent_is_not_null(
+            jobs_1000__gte=0).annotate_rent(
             rent).detailed_jobs()
 
-        field_names = ['job__title',rent_column_name,'median']
+        field_names = ['job__title','rent','median']
 
         #if location_type == 'state':
         #    field_names.append('location__state__initials')
@@ -197,7 +197,7 @@ class RentToIncomeRatioView(FormView):
             verbose=False,
             coerce_float=True)
 
-        df['ratio'] = (df[rent_column_name] * 12) / df['median'] * 100
+        df['ratio'] = (df['rent'] * 12) / df['median'] * 100
 
         good_jobs = df
         good_jobs = good_jobs.sort_values(by='ratio',ascending=True)
@@ -208,12 +208,12 @@ class RentToIncomeRatioView(FormView):
             df.index = pd.Series(range(1,len(df) + 1))
             df['rank'] = df.index
 
-            df = df[['rank','job__title',rent_column_name,'median','ratio']]
+            df = df[['rank','job__title','rent','median','ratio']]
 
             new_column_names = {
                 'rank'              :   'Rank',
                 'job__title'        :   'Job',
-                rent_column_name    :   'Rent',
+                'rent'    :   'Rent',
                 'median'            :   'Salary',
                 'ratio'             :   'Ratio'
             }
